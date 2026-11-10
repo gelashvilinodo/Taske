@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Personal Schedule</title>
 </head>
 <body>
-<title>Personal Schedule</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1138,12 +1138,50 @@ dialog::backdrop { background: rgba(10, 15, 25, .5); }
     document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
   }
 
+  // Browser-only storage used when the page runs outside claude.ai (e.g. GitHub Pages).
+  function localDb() {
+    const KEY = 'ps.db.';
+    const read = name => { try { return JSON.parse(localStorage.getItem(KEY + name) || '{}') || {}; } catch (e) { return {}; } };
+    const listeners = {};
+    const snap = name => {
+      const all = read(name);
+      return { size: Object.keys(all).length, metadata: { fromCache: false }, docs: Object.keys(all).map(id => ({ id, data: () => all[id] })) };
+    };
+    const emit = name => (listeners[name] || []).forEach(fn => { try { fn(snap(name)); } catch (e) {} });
+    const write = (name, fn) => {
+      const all = read(name); fn(all);
+      try { localStorage.setItem(KEY + name, JSON.stringify(all)); } catch (e) { return Promise.reject({ code: 'quota_exceeded' }); }
+      setTimeout(() => emit(name), 0);
+      return Promise.resolve();
+    };
+    window.addEventListener('storage', e => { if (e.key && e.key.startsWith(KEY)) emit(e.key.slice(KEY.length)); });
+    let n = 0;
+    return {
+      collection(name) {
+        return {
+          doc(id) {
+            id = id || ('l' + Date.now().toString(36) + (++n) + Math.random().toString(36).slice(2, 6));
+            return {
+              id,
+              set: data => write(name, all => { all[id] = data; }),
+              update: fields => write(name, all => { all[id] = Object.assign({}, all[id], fields); }),
+              delete: () => write(name, all => { delete all[id]; })
+            };
+          },
+          onSnapshot(fn) { (listeners[name] = listeners[name] || []).push(fn); setTimeout(() => fn(snap(name)), 0); return () => {}; }
+        };
+      }
+    };
+  }
+
   async function connect() {
-    for (let i = 0; i < 50 && !(window.claude && window.claude.use); i++) await new Promise(r => setTimeout(r, 100));
+    const onClaude = /(^|\.)claude\.ai$|claudeusercontent|anthropic/.test(location.hostname);
+    for (let i = 0; onClaude && i < 50 && !(window.claude && window.claude.use); i++) await new Promise(r => setTimeout(r, 100));
     let db = null, user = null;
     try {
       if (window.claude && window.claude.use) [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
     } catch (e) { db = null; }
+    if (!db) { db = localDb(); user = null; viewerIsOwner = true; }
     if (!db) { state.noDb = true; state.readOnly = true; state.conn = 'bad'; render(); return; }
     if (user) {
       const can = await user.can('data.write');
