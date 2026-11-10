@@ -1,0 +1,1187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Personal Schedule</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@600;700&display=swap">
+<style>
+/* Layout: a week-to-view desk planner. Five weekday columns on a cool ledger ground, one entry line above them. */
+:root {
+  --bg: #eff2f6; --surface: #ffffff; --sunk: #e3e8ef; --ink: #172130; --muted: #566478; --line: #d3dae4;
+  --accent: #2343c4; --on-accent: #ffffff; --accent-tint: #dfe6fb; --accent-ink: #1d379f; --today: #e4eafa;
+  --ok-bg: #dbefdf; --ok-fg: #1c6531; --warn-bg: #fbefca; --warn-fg: #6f5200; --bad-bg: #fbe0de; --bad-fg: #9c261f;
+  --skrib-bg: #e9e4fb; --skrib-fg: #4a2fa8; --sitbox-bg: #fde6d3; --sitbox-fg: #8f420e;
+  --modx-bg: #d6f0ea; --modx-fg: #0e5f50; --excity-bg: #dce9fb; --excity-fg: #1c5499; --other-bg: #e6e9ee; --other-fg: #4a5666;
+  --shadow: 0 1px 2px rgba(23, 33, 48, .08);
+  --n-skrib: #8b3dff; --n-sitbox: #ff6a00; --n-modx: #00b383; --n-excity: #0098e0; --n-other: #e0389b; --glow-pct: 32%;
+  --font-ui: "Noto Sans Georgian", system-ui, sans-serif;
+  --font-display: "Noto Serif Georgian", "Noto Sans Georgian", serif;
+  --font-data: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161f; --surface: #1a212d; --sunk: #232b39; --ink: #e8edf5; --muted: #9aa7b9; --line: #2e3748;
+    --accent: #8ea6ff; --on-accent: #101626; --accent-tint: #27325a; --accent-ink: #c3d0ff; --today: #1c2640;
+    --ok-bg: #1b3d27; --ok-fg: #93dca8; --warn-bg: #40340f; --warn-fg: #efd27a; --bad-bg: #4a2220; --bad-fg: #f6a9a3;
+    --skrib-bg: #32285a; --skrib-fg: #cdbfff; --sitbox-bg: #4a2f1a; --sitbox-fg: #f7be91;
+    --modx-bg: #16403a; --modx-fg: #8fe0cf; --excity-bg: #1e3553; --excity-fg: #a8ccf7; --other-bg: #2c3442; --other-fg: #b9c4d3;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    --n-skrib: #b46cff; --n-sitbox: #ff8a2a; --n-modx: #19f5b5; --n-excity: #2fd3ff; --n-other: #ff4fc3; --glow-pct: 55%;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161f; --surface: #1a212d; --sunk: #232b39; --ink: #e8edf5; --muted: #9aa7b9; --line: #2e3748;
+  --accent: #8ea6ff; --on-accent: #101626; --accent-tint: #27325a; --accent-ink: #c3d0ff; --today: #1c2640;
+  --ok-bg: #1b3d27; --ok-fg: #93dca8; --warn-bg: #40340f; --warn-fg: #efd27a; --bad-bg: #4a2220; --bad-fg: #f6a9a3;
+  --skrib-bg: #32285a; --skrib-fg: #cdbfff; --sitbox-bg: #4a2f1a; --sitbox-fg: #f7be91;
+  --modx-bg: #16403a; --modx-fg: #8fe0cf; --excity-bg: #1e3553; --excity-fg: #a8ccf7; --other-bg: #2c3442; --other-fg: #b9c4d3;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  --n-skrib: #b46cff; --n-sitbox: #ff8a2a; --n-modx: #19f5b5; --n-excity: #2fd3ff; --n-other: #ff4fc3; --glow-pct: 55%;
+  color-scheme: dark;
+}
+html:root[data-mode="day"] {
+  --bg: #eff2f6; --surface: #ffffff; --sunk: #e3e8ef; --ink: #172130; --muted: #566478; --line: #d3dae4;
+  --accent: #2343c4; --on-accent: #ffffff; --accent-tint: #dfe6fb; --accent-ink: #1d379f; --today: #e4eafa;
+  --ok-bg: #dbefdf; --ok-fg: #1c6531; --warn-bg: #fbefca; --warn-fg: #6f5200; --bad-bg: #fbe0de; --bad-fg: #9c261f;
+  --skrib-bg: #e9e4fb; --skrib-fg: #4a2fa8; --sitbox-bg: #fde6d3; --sitbox-fg: #8f420e;
+  --modx-bg: #d6f0ea; --modx-fg: #0e5f50; --excity-bg: #dce9fb; --excity-fg: #1c5499; --other-bg: #e6e9ee; --other-fg: #4a5666;
+  --shadow: 0 1px 2px rgba(23, 33, 48, .08);
+  --n-skrib: #8b3dff; --n-sitbox: #ff6a00; --n-modx: #00b383; --n-excity: #0098e0; --n-other: #e0389b; --glow-pct: 32%;
+  color-scheme: light;
+}
+html:root[data-mode="night"] {
+  --bg: #11161f; --surface: #1a212d; --sunk: #232b39; --ink: #e8edf5; --muted: #9aa7b9; --line: #2e3748;
+  --accent: #8ea6ff; --on-accent: #101626; --accent-tint: #27325a; --accent-ink: #c3d0ff; --today: #1c2640;
+  --ok-bg: #1b3d27; --ok-fg: #93dca8; --warn-bg: #40340f; --warn-fg: #efd27a; --bad-bg: #4a2220; --bad-fg: #f6a9a3;
+  --skrib-bg: #32285a; --skrib-fg: #cdbfff; --sitbox-bg: #4a2f1a; --sitbox-fg: #f7be91;
+  --modx-bg: #16403a; --modx-fg: #8fe0cf; --excity-bg: #1e3553; --excity-fg: #a8ccf7; --other-bg: #2c3442; --other-fg: #b9c4d3;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  --n-skrib: #b46cff; --n-sitbox: #ff8a2a; --n-modx: #19f5b5; --n-excity: #2fd3ff; --n-other: #ff4fc3; --glow-pct: 55%;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font: 400 13.5px/1.4 var(--font-ui);
+  padding-block: 10px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app { max-width: 1600px; margin-inline: auto; display: grid; gap: 8px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { margin: 0; font: 600 11.5px/1 var(--font-data); letter-spacing: .04em; color: var(--muted); }
+.conn { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
+.conn i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.conn.live i { background: var(--ok-fg); }
+.conn.bad i { background: var(--bad-fg); }
+
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
+.nav-left { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.period { min-width: 0; padding-inline: 4px; }
+.eyebrow { display: block; font: 500 10.5px/1.2 var(--font-data); color: var(--muted); font-variant-numeric: tabular-nums; }
+.period h2 { margin: 0; font: 700 clamp(18px, 2vw, 21px)/1.15 var(--font-display); text-wrap: balance; }
+.icon-btn, .ghost { background: var(--surface); border: 1px solid var(--line); border-radius: 7px; min-height: 28px; }
+.icon-btn { width: 28px; font-size: 13px; line-height: 1; }
+.ghost { padding: 2px 9px; font-size: 12px; }
+.icon-btn:hover, .ghost:hover { border-color: var(--accent); }
+.seg { display: inline-flex; background: var(--sunk); border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; border-radius: 6px; padding: 3px 10px; font-size: 12px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: var(--shadow); }
+
+.add {
+  display: grid; grid-template-columns: minmax(0, 1fr) 120px 110px 130px 160px auto; gap: 7px; align-items: end;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 6px 8px;
+}
+.field { display: grid; gap: 2px; min-width: 0; }
+.field > span, .fieldset-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+.input {
+  width: 100%; min-height: 30px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); padding: 4px 8px;
+}
+input.input, select.input { height: 30px; }
+textarea.input { resize: none; overflow: hidden; display: block; line-height: 1.45; }
+.input:focus { border-color: var(--accent); }
+.primary {
+  min-height: 30px; border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-weight: 600; padding: 3px 12px;
+}
+.primary:hover { filter: brightness(1.08); }
+
+#addOpen { display: none; }
+.bar { display: flex; justify-content: space-between; align-items: center; gap: 10px 20px; flex-wrap: wrap; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: transparent;
+  border-radius: 999px; padding: 1px 9px; font-size: 11.5px; min-height: 23px; color: var(--muted);
+}
+.filter b { font: 500 10.5px var(--font-data); font-variant-numeric: tabular-nums; }
+.filter[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.stats { display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); }
+.stats b { font: 500 12px var(--font-data); color: var(--ink); font-variant-numeric: tabular-nums; }
+.stats .over, .stats .over b { color: var(--bad-fg); }
+.meter { width: 96px; height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--ok-fg); }
+
+.notice {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap;
+  padding: 4px 10px; border-radius: 7px; background: var(--sunk); font-size: 12px;
+}
+.notice.warn { background: var(--warn-bg); color: var(--warn-fg); }
+.notice.warn .ghost { background: transparent; border-color: currentColor; color: inherit; }
+
+.week { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; align-items: stretch; }
+.status-board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; align-items: stretch; }
+.column { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 5px; border-radius: 8px; background: var(--sunk); min-height: 150px; }
+.column.is-today { background: var(--today); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.column.is-over { box-shadow: inset 0 0 0 2px var(--accent); }
+.col-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 22px; padding-inline: 2px; }
+.col-name { font-weight: 600; font-size: 12.5px; display: block; line-height: 1.2; }
+.col-date { font: 400 10px/1.2 var(--font-data); color: var(--muted); font-variant-numeric: tabular-nums; }
+.col-add {
+  width: 22px; height: 22px; flex: none; border: 0; background: transparent; border-radius: 5px; font-size: 15px; line-height: 1; color: var(--muted);
+}
+.col-add:hover { background: var(--surface); color: var(--accent); }
+.count { font: 500 11.5px var(--font-data); color: var(--muted); font-variant-numeric: tabular-nums; }
+.list { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.empty { margin: 0; font-size: 11px; color: var(--muted); padding: 4px 2px; }
+
+.card { display: grid; gap: 4px; background: var(--surface); border-radius: 6px; padding: 5px 7px; min-width: 0; --n: var(--line); border: 1.5px solid var(--n); box-shadow: 0 0 9px -1px color-mix(in srgb, var(--n) var(--glow-pct), transparent); }
+.card.pj-skrib { --n: var(--n-skrib); }
+.card.pj-sitbox { --n: var(--n-sitbox); }
+.card.pj-modx { --n: var(--n-modx); }
+.card.pj-excity { --n: var(--n-excity); }
+.card.pj-other { --n: var(--n-other); }
+.card.is-done, .card.is-canceled { --n: var(--line); box-shadow: none; }
+.top-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.top .seg { width: auto; }
+.top .seg button { flex: none; padding: 2px 9px; font-size: 11.5px; }
+.card[draggable="true"] { cursor: grab; }
+.card.dragging { opacity: .45; }
+.card-title {
+  all: unset; display: block; font-weight: 500; font-size: 12.5px; line-height: 1.3; overflow-wrap: anywhere; cursor: pointer;
+}
+.card-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+span.card-title { cursor: default; }
+.card.is-done .card-title, .card.is-canceled .card-title { text-decoration: line-through; color: var(--muted); }
+.card.is-canceled { opacity: .72; }
+.card-desc { margin: 0; font-size: 11.5px; line-height: 1.3; color: var(--muted); white-space: pre-line; overflow-wrap: anywhere; }
+.card-desc.clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.more { all: unset; justify-self: start; font-size: 11px; font-weight: 500; color: var(--accent-ink); cursor: pointer; }
+.more:hover { text-decoration: underline; }
+.more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.add .more, .add .field-wide { grid-column: 1 / -1; }
+#editDesc, #addDesc, #addSubs { overflow: auto; resize: vertical; }
+.meta { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; }
+.chip { display: inline-block; font-size: 10.5px; line-height: 1.3; font-weight: 500; padding: 0 5px; border-radius: 4px; background: var(--bg); color: var(--muted); }
+.chip.is-soon { background: var(--warn-bg); color: var(--warn-fg); }
+.chip.is-over { background: var(--bad-bg); color: var(--bad-fg); }
+.p-skrib { background: var(--skrib-bg); color: var(--skrib-fg); }
+.p-sitbox { background: var(--sitbox-bg); color: var(--sitbox-fg); }
+.p-modx { background: var(--modx-bg); color: var(--modx-fg); }
+.p-excity { background: var(--excity-bg); color: var(--excity-fg); }
+.p-other { background: var(--other-bg); color: var(--other-fg); }
+.status {
+  justify-self: start; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: transparent;
+  border-radius: 999px; padding: 0 6px 0 5px; font-size: 10.5px; font-weight: 500; min-height: 19px; color: var(--muted);
+}
+.status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid currentColor; }
+.status.s-doing { background: var(--accent-tint); border-color: transparent; color: var(--accent-ink); }
+.status.s-doing::before { background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+.status.s-done { background: var(--ok-bg); border-color: transparent; color: var(--ok-fg); }
+.status.s-done::before { background: currentColor; }
+button.status:hover { border-color: var(--accent); }
+span.status { cursor: default; }
+
+button.status::after { content: "\25BE"; font-size: 10px; }
+.status.s-canceled { background: var(--other-bg); border-color: transparent; color: var(--other-fg); }
+.status.s-canceled::before { border: 0; height: 2px; border-radius: 1px; background: currentColor; }
+.card-foot { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; }
+.prio { display: inline-flex; align-items: center; border: 1px solid transparent; border-radius: 999px; padding: 0 6px; font-size: 10.5px; font-weight: 500; min-height: 19px; background: transparent; color: var(--muted); }
+.prio.none { border: 1px dashed var(--line); }
+.prio.pr-urgent { background: var(--bad-bg); color: var(--bad-fg); }
+.prio.pr-high { background: var(--warn-bg); color: var(--warn-fg); }
+.prio.pr-low { background: var(--other-bg); color: var(--other-fg); }
+button.prio:hover { border-color: var(--accent); }
+button.prio::after { content: "\25BE"; font-size: 10px; margin-left: 4px; }
+#menu { position: fixed; z-index: 30; min-width: 150px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 4px; box-shadow: 0 8px 24px rgba(10, 15, 25, .22); display: grid; gap: 1px; }
+#menu button { all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 7px 10px; border-radius: 7px; font-size: 13.5px; cursor: pointer; }
+#menu button:hover, #menu button:focus-visible { background: var(--sunk); }
+#menu button[aria-checked="true"] { font-weight: 600; }
+.sub-toggle { all: unset; display: flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 500; color: var(--muted); cursor: pointer; }
+.sub-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.sub-toggle b { font: 500 10px var(--font-data); font-variant-numeric: tabular-nums; }
+.sub-toggle .meter { flex: 1; width: auto; height: 4px; }
+.sub-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.sub-item label { display: flex; align-items: flex-start; gap: 5px; font-size: 11.5px; line-height: 1.3; overflow-wrap: anywhere; min-width: 0; cursor: pointer; }
+.sub-item input { margin: 1px 0 0; width: 12px; height: 12px; accent-color: var(--accent); flex: none; }
+.sub-item.is-done span { text-decoration: line-through; color: var(--muted); }
+.sub-edit { display: grid; gap: 6px; }
+.sub-edit:empty { display: none; }
+.sub-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.sub-row input[type="checkbox"] { accent-color: var(--accent); margin: 0; }
+.sub-del { width: 30px; height: 30px; border: 0; background: transparent; color: var(--muted); font-size: 17px; line-height: 1; border-radius: 7px; }
+.sub-del:hover { background: var(--sunk); color: var(--bad-fg); }
+.sub-new { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 2px; }
+.details-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+#tray { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -6px 20px rgba(10, 15, 25, .16); padding-block: 10px calc(10px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.tray-in { max-width: 1400px; margin-inline: auto; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; align-items: center; }
+.tray-nav { display: flex; align-items: center; gap: 6px; }
+.tray-week { font-weight: 600; font-size: 14px; min-width: 124px; text-align: center; font-variant-numeric: tabular-nums; }
+.tray-arrow { width: 44px; height: 46px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; font-size: 16px; }
+.tray-arrow.is-over { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-ink); }
+.tray-days { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.tray-day { display: flex; align-items: center; justify-content: center; min-height: 46px; border: 1.5px dashed var(--line); border-radius: 9px; padding: 6px; font-size: 13.5px; background: var(--bg); }
+.tray-day.is-over { border-style: solid; border-color: var(--accent); background: var(--accent-tint); color: var(--accent-ink); font-weight: 600; }
+.tray-hint { grid-column: 1 / -1; margin: 0; font-size: 12.5px; color: var(--muted); }
+
+.cmt-btn { display: inline-flex; align-items: center; border: 1px dashed var(--line); border-radius: 999px; padding: 0 6px; font-size: 10.5px; font-weight: 500; min-height: 19px; background: transparent; color: var(--muted); }
+.cmt-btn:hover { border-color: var(--accent); }
+.cmt-btn.has { border-style: solid; color: var(--ink); }
+.cmts { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 4px; min-width: 0; }
+.cmt { display: grid; gap: 2px; min-width: 0; }
+.cmt-head { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--muted); }
+.cmt-head b { font-weight: 600; color: var(--ink); }
+.cmt-time { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.cmt p { margin: 0; font-size: 11.5px; line-height: 1.3; white-space: pre-line; overflow-wrap: anywhere; }
+.cmt-del { margin-left: auto; border: 0; background: transparent; color: var(--muted); font-size: 10.5px; padding: 0 2px; }
+.cmt-del:hover, .cmt-del.armed { color: var(--bad-fg); }
+.cmt-new { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: end; }
+.cmt-new textarea { overflow: auto; }
+
+.month { display: grid; gap: 8px; }
+.month-sum { font-size: 14px; color: var(--muted); }
+.month-sum b { font: 500 14px var(--font-data); color: var(--ink); }
+.wk {
+  all: unset; box-sizing: border-box; display: grid; grid-template-columns: 62px minmax(150px, 1.1fr) minmax(0, 2fr) 70px 96px; gap: 8px 14px; align-items: center;
+  background: var(--surface); border-radius: 7px; padding: 5px 10px; cursor: pointer; box-shadow: var(--shadow);
+}
+.wk:hover { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.wk:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wk.is-now { background: var(--today); }
+.wk-num { font: 500 13px var(--font-data); color: var(--muted); }
+.wk-range { font-weight: 600; }
+.wk-count { font: 500 14px var(--font-data); text-align: right; font-variant-numeric: tabular-nums; }
+
+dialog {
+  width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 12px 14px;
+}
+dialog::backdrop { background: rgba(10, 15, 25, .5); }
+.dlg { display: grid; gap: 7px; }
+.dlg h3 { margin: 0; font: 700 16px/1.2 var(--font-display); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.radios { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; background: var(--sunk); padding: 3px; border-radius: 9px; }
+.radios label { display: block; text-align: center; font-size: 12px; padding: 3px; border-radius: 7px; cursor: pointer; color: var(--muted); }
+.radios input { position: absolute; opacity: 0; pointer-events: none; }
+.radios label:has(input:checked) { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: var(--shadow); }
+.radios label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dlg-foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.dlg-foot div { display: flex; gap: 8px; }
+.danger { background: transparent; border: 1px solid transparent; color: var(--bad-fg); border-radius: 8px; padding: 6px 10px; min-height: 40px; }
+.danger.armed { background: var(--bad-bg); }
+
+#toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 20;
+  max-width: calc(100vw - 32px); background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 9px; font-size: 14px;
+}
+
+@media (max-width: 1040px) {
+  .add { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .status-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .add .field-title { grid-column: 1 / -1; }
+  .add .primary { grid-column: 1 / -1; }
+  .week { grid-template-columns: minmax(0, 1fr); }
+  .column { min-height: 0; }
+  .wk { grid-template-columns: 56px minmax(0, 1fr) 62px; }
+  .wk .meta { grid-column: 1 / -1; grid-row: 2; }
+  .wk .meter { grid-column: 1 / -1; grid-row: 3; width: 100%; }
+}
+@media (max-width: 620px) {
+  .add { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .details-row { grid-template-columns: minmax(0, 1fr); }
+  .tray-in { grid-template-columns: minmax(0, 1fr); }
+  #addOpen { display: block; width: 100%; }
+  .status, .prio, .cmt-btn { min-height: 26px; font-size: 11.5px; }
+  .add:not(.is-open) { display: none; }
+  .status-board { grid-template-columns: minmax(0, 1fr); }
+  .seg { width: 100%; }
+  .seg button { flex: 1; padding-inline: 6px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card, .status, .filter, .icon-btn, .ghost { transition: border-color .12s, background-color .12s, opacity .12s; }
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <h1 class="brand">Personal Schedule</h1>
+    <div class="top-right">
+      <div class="conn" id="conn" role="status"><i></i><span id="connText">Loading</span></div>
+      <div class="seg" id="modeSeg" aria-label="Theme">
+        <button type="button" data-mode="day" aria-pressed="false">Day</button>
+        <button type="button" data-mode="night" aria-pressed="false">Night</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="nav">
+    <div class="nav-left">
+      <button class="icon-btn" id="prev" type="button" aria-label="Previous">←</button>
+      <div class="period">
+        <span class="eyebrow" id="eyebrow"></span>
+        <h2 id="periodTitle"></h2>
+      </div>
+      <button class="icon-btn" id="next" type="button" aria-label="Next">→</button>
+      <button class="ghost" id="now" type="button">This week</button>
+    </div>
+    <div class="seg" id="views">
+      <button type="button" data-view="week" aria-pressed="true">Week</button>
+      <button type="button" data-view="status" aria-pressed="false">Status</button>
+      <button type="button" data-view="month" aria-pressed="false">Month</button>
+    </div>
+  </div>
+
+  <button class="ghost" id="addOpen" type="button" aria-expanded="false" hidden>+ Add task</button>
+  <form class="add" id="addForm" autocomplete="off" hidden>
+    <label class="field field-title"><span>Task</span>
+      <textarea class="input" id="addTitle" rows="1" placeholder="Type a task and press Enter"></textarea>
+    </label>
+    <label class="field field-project"><span>Project</span><select class="input" id="addProject"></select></label>
+    <label class="field"><span>Priority</span><select class="input" id="addPriority"></select></label>
+    <label class="field"><span>Day</span><select class="input" id="addDay"></select></label>
+    <label class="field"><span>Deadline</span><input class="input" id="addDeadline" type="date"></label>
+    <button class="primary" type="submit">Add task</button>
+    <button class="more" id="addDescToggle" type="button" aria-expanded="false">+ Description and subtasks</button>
+    <div class="details-row field-wide" id="addDescField" hidden>
+      <label class="field"><span>Description</span><textarea class="input" id="addDesc" rows="3" placeholder="Details, links, who to check with"></textarea></label>
+      <label class="field"><span>Subtasks, one per line</span><textarea class="input" id="addSubs" rows="3" placeholder="Prepare invoice"></textarea></label>
+    </div>
+  </form>
+
+  <div class="notice" id="notice" hidden></div>
+  <div class="notice warn" id="carry" hidden></div>
+
+  <div class="bar">
+    <div class="filters" id="filters"></div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <main id="board"></main>
+</div>
+
+<dialog id="editor">
+  <form class="dlg" id="editForm" autocomplete="off">
+    <h3>Edit task</h3>
+    <label class="field"><span>Task</span><textarea class="input" id="editTitle" rows="2" required></textarea></label>
+    <label class="field"><span>Description</span><textarea class="input" id="editDesc" rows="3" placeholder="Details, links, who to check with"></textarea></label>
+    <div class="field">
+      <span class="fieldset-label">Subtasks</span>
+      <div class="sub-edit" id="editSubs"></div>
+      <div class="sub-new"><input class="input" id="editSubNew" type="text" placeholder="Add a subtask and press Enter" aria-label="New subtask"><button class="ghost" id="editSubAdd" type="button">Add</button></div>
+    </div>
+    <div class="field">
+      <span class="fieldset-label">Status</span>
+      <div class="radios" id="editStatus"></div>
+    </div>
+    <div class="field">
+      <span class="fieldset-label">Priority</span>
+      <div class="radios" id="editPriority"></div>
+    </div>
+    <label class="field"><span>Project</span><select class="input" id="editProject"></select></label>
+    <div class="two">
+      <label class="field"><span>Day</span><input class="input" id="editDay" type="date" required></label>
+      <label class="field"><span>Deadline</span><input class="input" id="editDeadline" type="date"></label>
+    </div>
+    <div class="dlg-foot">
+      <button class="danger" id="editDelete" type="button">Delete</button>
+      <div>
+        <button class="ghost" id="editCancel" type="button">Cancel</button>
+        <button class="primary" type="submit">Save</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<div id="menu" role="menu" hidden></div>
+<div id="tray" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  const PROJECTS = [
+    { id: 'skrib', name: 'Skrib' }, { id: 'sitbox', name: 'Sitbox' }, { id: 'modx', name: 'MODX' },
+    { id: 'excity', name: 'Ex City' }, { id: 'other', name: 'Other' }
+  ];
+  const STATUSES = [{ id: 'todo', name: 'To do' }, { id: 'doing', name: 'In progress' }, { id: 'done', name: 'Done' }, { id: 'canceled', name: 'Canceled' }];
+  const PRIORITIES = [{ id: 'urgent', name: 'Urgent' }, { id: 'high', name: 'High' }, { id: 'low', name: 'Low' }];
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const DAYS_S = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const MONTHS_S = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const $ = id => document.getElementById(id);
+
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const parse = s => { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+  const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const weekday = d => (d.getDay() + 6) % 7;
+  const mondayOf = d => addDays(d, -weekday(d));
+  const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
+  const planningMonday = () => { const t = today(); return weekday(t) >= 5 ? addDays(mondayOf(t), 7) : mondayOf(t); };
+  const snapWeekday = d => (weekday(d) >= 5 ? addDays(mondayOf(d), 7) : d);
+  const isoWeek = monday => {
+    const th = addDays(monday, 3);
+    const doy = Math.round((th - new Date(th.getFullYear(), 0, 1)) / 864e5);
+    return Math.floor(doy / 7) + 1;
+  };
+  const shortDate = d => d.getDate() + ' ' + MONTHS_S[d.getMonth()];
+  const rangeLabel = (mon, fri, names) => mon.getMonth() === fri.getMonth()
+    ? mon.getDate() + '–' + fri.getDate() + ' ' + names[fri.getMonth()]
+    : mon.getDate() + ' ' + names[mon.getMonth()] + ' – ' + fri.getDate() + ' ' + names[fri.getMonth()];
+  const isDate = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(parse(s));
+
+  function store(key, val) { try { if (val === undefined) return localStorage.getItem(key); localStorage.setItem(key, val); } catch (e) { return null; } }
+
+  function h(tag, attrs, ...kids) {
+    const el = document.createElement(tag);
+    for (const k in attrs || {}) {
+      const v = attrs[k];
+      if (v == null || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? '' : v);
+    }
+    for (const c of kids.flat()) {
+      if (c == null || c === false) continue;
+      el.append(c.nodeType ? c : document.createTextNode(String(c)));
+    }
+    return el;
+  }
+
+  const savedView = store('ps.view');
+  const state = {
+    tasks: [], loaded: false, readOnly: false, noDb: false, conn: 'loading',
+    view: ['week', 'status', 'month'].includes(savedView) ? savedView : 'week',
+    weekStart: planningMonday(), month: null, filter: 'all', editing: null
+  };
+  state.month = new Date(state.weekStart.getFullYear(), state.weekStart.getMonth(), 1);
+
+  let col = null;
+  const queues = {};
+  const openSubs = new Set();
+  const openComments = new Set();
+  const drafts = {};
+  const names = {};
+  let commentsByTask = {};
+  let commentsCol = null;
+  let pendingFocus = null;
+  let armedComment = null;
+  let me = null;
+  let viewerIsOwner = false;
+  const tray = { week: null };
+  const trayStops = [];
+  let dragId = null;
+  let pendingRender = false;
+  let menuAnchor = null;
+  let subCounter = 0;
+  const expanded = new Set();
+  let toastTimer = 0;
+
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 3600);
+  }
+
+  function clean(id, d) {
+    const day = isDate(d.day) ? iso(snapWeekday(parse(d.day))) : iso(state.weekStart);
+    return {
+      id,
+      title: typeof d.title === 'string' ? d.title : '',
+      description: typeof d.description === 'string' ? d.description : '',
+      priority: PRIORITIES.some(p => p.id === d.priority) ? d.priority : '',
+      subtasks: Array.isArray(d.subtasks)
+        ? d.subtasks.filter(s => s && typeof s.title === 'string' && s.title).map((s, i) => ({ id: typeof s.id === 'string' ? s.id : 's' + i, title: s.title, done: !!s.done }))
+        : [],
+      project: PROJECTS.some(p => p.id === d.project) ? d.project : 'other',
+      status: STATUSES.some(s => s.id === d.status) ? d.status : 'todo',
+      day,
+      deadline: isDate(d.deadline) ? d.deadline : '',
+      createdAt: typeof d.createdAt === 'number' ? d.createdAt : 0
+    };
+  }
+
+  function failWrite(e) {
+    const code = e && e.code;
+    if (code === 'invalid_argument') { state.readOnly = true; render(); toast('You can view this page but not change it.'); }
+    else if (code === 'quota_exceeded') toast('The task database is full. Delete old tasks and try again.');
+    else toast('Could not save. Check your connection and try again.');
+  }
+
+  function run(id, fn) {
+    const attempt = () => fn().catch(e => {
+      if (e && e.code === 'unavailable') return new Promise(r => setTimeout(r, 400 + Math.random() * 600)).then(fn);
+      throw e;
+    });
+    queues[id] = (queues[id] || Promise.resolve()).then(attempt).catch(failWrite);
+    return queues[id];
+  }
+
+  function addTask(fields) {
+    const ref = col.doc();
+    const data = Object.assign({ status: 'todo', createdAt: Date.now() }, fields);
+    state.tasks.push(clean(ref.id, data));
+    return run(ref.id, () => ref.set(data));
+  }
+  function patchTask(id, fields) {
+    const t = state.tasks.find(x => x.id === id);
+    if (t) Object.assign(t, fields);
+    render();
+    return run(id, () => col.doc(id).update(fields));
+  }
+  function removeTask(id) {
+    state.tasks = state.tasks.filter(x => x.id !== id);
+    (commentsByTask[id] || []).forEach(c => run(c.id, () => commentsCol.doc(c.id).delete()));
+    delete commentsByTask[id];
+    render();
+    return run(id, () => col.doc(id).delete());
+  }
+  const newSubId = () => 's' + Date.now().toString(36) + (++subCounter);
+  const makeSubs = text => text.split('\n').map(s => s.trim()).filter(Boolean).map(title => ({ id: newSubId(), title: title.slice(0, 300), done: false }));
+
+  function closeMenu() {
+    $('menu').hidden = true;
+    menuAnchor = null;
+  }
+  function openMenu(anchor, items, current, onPick) {
+    if (menuAnchor === anchor) { closeMenu(); return; }
+    const m = $('menu');
+    m.replaceChildren(...items.map(it => h('button', {
+      type: 'button', role: 'menuitemradio', 'aria-checked': String(it.id === current),
+      onclick: () => { closeMenu(); if (it.id !== current) onPick(it.id); }
+    }, h('span', null, it.name), it.id === current ? h('span', { 'aria-hidden': 'true' }, '✓') : null)));
+    m.hidden = false;
+    const r = anchor.getBoundingClientRect();
+    const mw = m.offsetWidth, mh = m.offsetHeight;
+    m.style.left = Math.max(8, Math.min(r.left, innerWidth - mw - 8)) + 'px';
+    m.style.top = (r.bottom + mh + 8 > innerHeight ? Math.max(8, r.top - mh - 4) : r.bottom + 4) + 'px';
+    menuAnchor = anchor;
+    (m.querySelector('[aria-checked="true"]') || m.firstElementChild).focus({ preventScroll: true });
+  }
+
+  function paintTray() {
+    const mon = tray.week;
+    $('trayWeek').textContent = rangeLabel(mon, addDays(mon, 4), MONTHS_S);
+    document.querySelectorAll('.tray-day').forEach((cell, i) => {
+      const d = addDays(mon, i);
+      cell.dataset.day = iso(d);
+      cell.textContent = DAYS_S[i] + ' ' + d.getDate();
+    });
+  }
+  function startDrag(id) {
+    dragId = id;
+    tray.week = addDays(state.weekStart, 7);
+    paintTray();
+    setTimeout(() => { if (dragId) $('tray').hidden = false; }, 0);
+  }
+  function endDrag() {
+    dragId = null;
+    $('tray').hidden = true;
+    trayStops.forEach(stop => stop());
+    if (pendingRender) { pendingRender = false; render(); }
+  }
+  function setupTray() {
+    const arrow = (dir, text) => {
+      const b = h('div', { class: 'tray-arrow' }, text);
+      let timer = 0;
+      const stop = () => { clearInterval(timer); timer = 0; b.classList.remove('is-over'); };
+      b.addEventListener('dragenter', e => {
+        if (!dragId) return;
+        e.preventDefault();
+        b.classList.add('is-over');
+        if (!timer) timer = setInterval(() => { tray.week = addDays(tray.week, 7 * dir); paintTray(); }, 600);
+      });
+      b.addEventListener('dragover', e => { if (dragId) e.preventDefault(); });
+      b.addEventListener('dragleave', e => { if (!b.contains(e.relatedTarget)) stop(); });
+      trayStops.push(stop);
+      return b;
+    };
+    const day = () => {
+      const c = h('div', { class: 'tray-day' });
+      c.addEventListener('dragover', e => { if (dragId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; c.classList.add('is-over'); } });
+      c.addEventListener('dragleave', () => c.classList.remove('is-over'));
+      c.addEventListener('drop', e => {
+        e.preventDefault();
+        c.classList.remove('is-over');
+        const id = dragId, ds = c.dataset.day;
+        endDrag();
+        if (id && ds) { patchTask(id, { day: ds }); const d = parse(ds); toast('Moved to ' + DAYS_S[weekday(d)] + ', ' + shortDate(d)); }
+      });
+      return c;
+    };
+    $('tray').append(h('div', { class: 'tray-in' },
+      h('div', { class: 'tray-nav' }, arrow(-1, '←'), h('span', { class: 'tray-week', id: 'trayWeek' }), arrow(1, '→')),
+      h('div', { class: 'tray-days' }, [0, 1, 2, 3, 4].map(() => day())),
+      h('p', { class: 'tray-hint' }, 'Drop on a day to move the task there. Hold over an arrow to change the week.')
+    ));
+    document.addEventListener('dragend', () => endDrag());
+  }
+
+  const visible = () => state.tasks.filter(t => state.filter === 'all' || t.project === state.filter);
+  const rank = { doing: 0, todo: 1, done: 2, canceled: 3 };
+  const prioRank = { urgent: 0, high: 1, low: 2, '': 3 };
+  const closed = t => t.status === 'done' || t.status === 'canceled';
+  function cmp(a, b) {
+    return rank[a.status] - rank[b.status]
+      || prioRank[a.priority] - prioRank[b.priority]
+      || (a.deadline || '9999').localeCompare(b.deadline || '9999')
+      || a.createdAt - b.createdAt;
+  }
+  const weekDays = () => [0, 1, 2, 3, 4].map(i => addDays(state.weekStart, i));
+  const inWeek = (t, mon) => t.day >= iso(mon) && t.day <= iso(addDays(mon, 4));
+  const isOverdue = t => t.deadline && !closed(t) && t.deadline < iso(today());
+
+  function deadlineChip(t) {
+    if (!t.deadline) return null;
+    const td = iso(today());
+    const label = shortDate(parse(t.deadline));
+    if (closed(t)) return h('span', { class: 'chip' }, 'Due ' + label);
+    if (t.deadline < td) return h('span', { class: 'chip is-over' }, 'Overdue, ' + label);
+    if (t.deadline === td) return h('span', { class: 'chip is-soon' }, 'Due today');
+    if (t.deadline === iso(addDays(today(), 1))) return h('span', { class: 'chip is-soon' }, 'Due tomorrow');
+    return h('span', { class: 'chip' }, 'Due ' + label);
+  }
+
+  function projectName(id) { return PROJECTS.find(p => p.id === id).name; }
+  function statusName(id) { return STATUSES.find(s => s.id === id).name; }
+  function prioName(id) { return PRIORITIES.find(p => p.id === id).name; }
+
+  function sendComment(t) {
+    const text = (drafts[t.id] || '').trim();
+    if (!text || !commentsCol) return;
+    delete drafts[t.id];
+    const ref = commentsCol.doc();
+    const data = { taskId: t.id, text: text.slice(0, 2000), at: Date.now(), by: me || '' };
+    (commentsByTask[t.id] = commentsByTask[t.id] || []).push({ id: ref.id, taskId: data.taskId, text: data.text, at: data.at, by: data.by });
+    render();
+    run(ref.id, () => ref.set(data));
+  }
+  function deleteComment(t, c) {
+    if (armedComment !== c.id) { armedComment = c.id; render(); return; }
+    armedComment = null;
+    commentsByTask[t.id] = (commentsByTask[t.id] || []).filter(x => x.id !== c.id);
+    render();
+    run(c.id, () => commentsCol.doc(c.id).delete());
+  }
+  function commentTime(ms) {
+    const d = new Date(ms);
+    return shortDate(d) + ', ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function commentButton(t, writable) {
+    const n = (commentsByTask[t.id] || []).length;
+    if (!writable && !n) return null;
+    const open = openComments.has(t.id);
+    return h('button', { class: 'cmt-btn' + (n ? ' has' : ''), type: 'button', 'aria-expanded': String(open), onclick: () => {
+      if (open) openComments.delete(t.id);
+      else { openComments.add(t.id); if (writable) pendingFocus = t.id; }
+      render();
+    } }, n ? 'Comments ' + n : 'Comment');
+  }
+  function commentNodes(t, writable) {
+    if (!openComments.has(t.id)) return null;
+    const list = commentsByTask[t.id] || [];
+    return h('div', { class: 'cmts' },
+      list.map(c => h('div', { class: 'cmt' },
+        h('div', { class: 'cmt-head' },
+          c.by ? h('b', null, names[c.by] || 'Someone') : null,
+          h('span', { class: 'cmt-time' }, commentTime(c.at)),
+          writable && (c.by === me || viewerIsOwner)
+            ? h('button', { class: 'cmt-del' + (armedComment === c.id ? ' armed' : ''), type: 'button', onclick: () => deleteComment(t, c) }, armedComment === c.id ? 'Confirm delete' : 'Delete')
+            : null
+        ),
+        h('p', null, c.text)
+      )),
+      writable && h('div', { class: 'cmt-new' },
+        h('textarea', { class: 'input', rows: '1', 'data-comment-for': t.id, placeholder: 'Write a comment', 'aria-label': 'Write a comment', oninput: e => { drafts[t.id] = e.target.value; }, onkeydown: e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendComment(t); } } }, drafts[t.id] || ''),
+        h('button', { class: 'ghost', type: 'button', onclick: () => sendComment(t) }, 'Send')
+      )
+    );
+  }
+
+  function subNodes(t, writable) {
+    const n = t.subtasks.length;
+    if (!n) return null;
+    const done = t.subtasks.filter(s => s.done).length;
+    const open = openSubs.has(t.id);
+    return [
+      h('button', { class: 'sub-toggle', type: 'button', 'aria-expanded': String(open), onclick: () => { if (open) openSubs.delete(t.id); else openSubs.add(t.id); render(); } },
+        h('span', null, (open ? '▾ ' : '▸ ') + 'Subtasks'), h('b', null, done + '/' + n),
+        h('span', { class: 'meter' }, h('i', { style: 'width:' + Math.round(done / n * 100) + '%' }))
+      ),
+      open && h('ul', { class: 'sub-list' }, t.subtasks.map(s => h('li', { class: 'sub-item' + (s.done ? ' is-done' : '') },
+        h('label', null,
+          h('input', { type: 'checkbox', checked: s.done || null, disabled: writable ? null : true, onchange: () => patchTask(t.id, { subtasks: t.subtasks.map(x => (x.id === s.id ? { id: x.id, title: x.title, done: !x.done } : x)) }) }),
+          h('span', null, s.title)
+        )
+      )))
+    ];
+  }
+
+  function descNodes(t) {
+    if (!t.description) return null;
+    const long = t.description.length > 90 || t.description.split('\n').length > 3;
+    const open = expanded.has(t.id);
+    return [
+      h('p', { class: 'card-desc' + (long && !open ? ' clamp' : '') }, t.description),
+      long && h('button', { class: 'more', type: 'button', 'aria-expanded': String(open), onclick: () => { if (open) expanded.delete(t.id); else expanded.add(t.id); render(); } }, open ? 'Less' : 'More')
+    ];
+  }
+
+  function card(t, showDay) {
+    const writable = !state.readOnly && !state.noDb;
+    const d = parse(t.day);
+    return h('article', {
+      class: 'card pj-' + t.project + (t.status === 'done' ? ' is-done' : '') + (t.status === 'canceled' ? ' is-canceled' : ''),
+      draggable: writable ? 'true' : null,
+      ondragstart: e => { e.dataTransfer.setData('text/plain', t.id); e.dataTransfer.effectAllowed = 'move'; e.currentTarget.classList.add('dragging'); startDrag(t.id); },
+      ondragend: e => e.currentTarget.classList.remove('dragging')
+    },
+      writable
+        ? h('button', { class: 'card-title', type: 'button', onclick: () => openEditor(t.id) }, t.title)
+        : h('span', { class: 'card-title' }, t.title),
+      descNodes(t),
+      subNodes(t, writable),
+      h('div', { class: 'meta' },
+        h('span', { class: 'chip p-' + t.project }, projectName(t.project)),
+        showDay && h('span', { class: 'chip' }, DAYS_S[weekday(d)] + ', ' + shortDate(d)),
+        deadlineChip(t)
+      ),
+      h('div', { class: 'card-foot' },
+        writable
+          ? h('button', { class: 'status s-' + t.status, type: 'button', 'aria-haspopup': 'menu', title: 'Change status', 'aria-label': 'Status: ' + statusName(t.status) + '. Click to change', onclick: e => openMenu(e.currentTarget, STATUSES, t.status, id => { if (id === 'done') { openComments.add(t.id); pendingFocus = t.id; } patchTask(t.id, { status: id }); }) }, statusName(t.status))
+          : h('span', { class: 'status s-' + t.status }, statusName(t.status)),
+        writable
+          ? h('button', { class: 'prio ' + (t.priority ? 'pr-' + t.priority : 'none'), type: 'button', 'aria-haspopup': 'menu', title: 'Change priority', 'aria-label': 'Priority: ' + (t.priority ? prioName(t.priority) : 'none') + '. Click to change', onclick: e => openMenu(e.currentTarget, PRIORITIES.concat({ id: '', name: 'No priority' }), t.priority, id => patchTask(t.id, { priority: id })) }, t.priority ? prioName(t.priority) : 'Priority')
+          : (t.priority ? h('span', { class: 'prio pr-' + t.priority }, prioName(t.priority)) : null),
+        commentButton(t, writable)
+      ),
+      commentNodes(t, writable)
+    );
+  }
+
+  function droppable(el, onDrop) {
+    if (state.readOnly || state.noDb) return el;
+    el.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; el.classList.add('is-over'); });
+    el.addEventListener('dragleave', e => { if (!el.contains(e.relatedTarget)) el.classList.remove('is-over'); });
+    el.addEventListener('drop', e => {
+      e.preventDefault(); el.classList.remove('is-over');
+      const id = e.dataTransfer.getData('text/plain');
+      endDrag();
+      if (state.tasks.some(t => t.id === id)) onDrop(id);
+    });
+    return el;
+  }
+
+  function renderWeek() {
+    const td = iso(today());
+    const all = visible();
+    return h('div', { class: 'week' }, weekDays().map((d, i) => {
+      const ds = iso(d);
+      const tasks = all.filter(t => t.day === ds).sort(cmp);
+      return droppable(h('section', { class: 'column' + (ds === td ? ' is-today' : ''), 'aria-label': DAYS[i] },
+        h('header', { class: 'col-head' },
+          h('div', null, h('span', { class: 'col-name' }, DAYS[i]), h('span', { class: 'col-date' }, shortDate(d) + (ds === td ? ' · today' : ''))),
+          !state.readOnly && !state.noDb && h('button', { class: 'col-add', type: 'button', 'aria-label': 'Add task on ' + DAYS[i], title: 'Add to this day', onclick: () => { $('addForm').classList.add('is-open'); $('addOpen').textContent = '− Close'; $('addDay').value = ds; $('addTitle').focus(); } }, '+')
+        ),
+        h('div', { class: 'list' }, tasks.length ? tasks.map(t => card(t, false)) : (state.loaded ? h('p', { class: 'empty' }, 'No tasks') : null))
+      ), id => patchTask(id, { day: ds }));
+    }));
+  }
+
+  function renderStatus() {
+    const week = visible().filter(t => inWeek(t, state.weekStart));
+    return h('div', { class: 'status-board' }, STATUSES.map(s => {
+      const tasks = week.filter(t => t.status === s.id).sort((a, b) => a.day.localeCompare(b.day) || cmp(a, b));
+      return droppable(h('section', { class: 'column', 'aria-label': s.name },
+        h('header', { class: 'col-head' }, h('span', { class: 'col-name' }, s.name), h('span', { class: 'count' }, tasks.length)),
+        h('div', { class: 'list' }, tasks.length ? tasks.map(t => card(t, true)) : (state.loaded ? h('p', { class: 'empty' }, 'Empty') : null))
+      ), id => patchTask(id, { status: s.id }));
+    }));
+  }
+
+  function monthWeeks() {
+    const first = state.month;
+    const last = new Date(first.getFullYear(), first.getMonth() + 1, 0);
+    const out = [];
+    for (let m = mondayOf(first); m <= last; m = addDays(m, 7)) if (addDays(m, 4) >= first) out.push(m);
+    return out;
+  }
+
+  function renderMonth() {
+    const all = visible();
+    const prefix = iso(state.month).slice(0, 7);
+    const monthTasks = all.filter(t => t.day.startsWith(prefix) && t.status !== 'canceled');
+    const nowMon = iso(planningMonday());
+    return h('div', { class: 'month' },
+      h('p', { class: 'month-sum', style: 'margin:0' }, 'This month: ', h('b', null, monthTasks.length), monthTasks.length === 1 ? ' task, ' : ' tasks, ', h('b', null, monthTasks.filter(t => t.status === 'done').length), ' done'),
+      monthWeeks().map(mon => {
+        const tasks = all.filter(t => inWeek(t, mon) && t.status !== 'canceled');
+        const done = tasks.filter(t => t.status === 'done').length;
+        const pct = tasks.length ? Math.round(done / tasks.length * 100) : 0;
+        return h('button', { class: 'wk' + (iso(mon) === nowMon ? ' is-now' : ''), type: 'button', onclick: () => { state.weekStart = mon; setView('week'); } },
+          h('span', { class: 'wk-num' }, 'Wk ' + isoWeek(mon)),
+          h('span', { class: 'wk-range' }, rangeLabel(mon, addDays(mon, 4), MONTHS)),
+          h('span', { class: 'meta' }, PROJECTS.map(p => {
+            const n = tasks.filter(t => t.project === p.id).length;
+            return n ? h('span', { class: 'chip p-' + p.id }, p.name + ' ' + n) : null;
+          })),
+          h('span', { class: 'wk-count' }, done + '/' + tasks.length),
+          h('span', { class: 'meter' }, h('i', { style: 'width:' + pct + '%' }))
+        );
+      })
+    );
+  }
+
+  function renderHeader() {
+    const isMonth = state.view === 'month';
+    if (isMonth) {
+      $('eyebrow').textContent = String(state.month.getFullYear());
+      $('periodTitle').textContent = MONTHS[state.month.getMonth()];
+      $('now').textContent = 'This month';
+      $('prev').setAttribute('aria-label', 'Previous month');
+      $('next').setAttribute('aria-label', 'Next month');
+    } else {
+      const mon = state.weekStart;
+      $('eyebrow').textContent = 'Week ' + isoWeek(mon) + ' · ' + addDays(mon, 3).getFullYear();
+      $('periodTitle').textContent = rangeLabel(mon, addDays(mon, 4), MONTHS);
+      $('now').textContent = 'This week';
+      $('prev').setAttribute('aria-label', 'Previous week');
+      $('next').setAttribute('aria-label', 'Next week');
+    }
+    document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
+    const c = $('conn');
+    c.classList.toggle('live', state.conn === 'live');
+    c.classList.toggle('bad', state.conn === 'bad');
+    $('connText').textContent = {
+      loading: 'Loading', live: state.readOnly ? 'Up to date · view only' : 'Up to date · saves automatically',
+      slow: 'Waiting for connection, this may be out of date', bad: 'Connection lost'
+    }[state.conn];
+  }
+
+  function renderFilters() {
+    const scope = state.view === 'month'
+      ? state.tasks.filter(t => t.day.startsWith(iso(state.month).slice(0, 7)))
+      : state.tasks.filter(t => inWeek(t, state.weekStart));
+    const items = [{ id: 'all', name: 'All', n: scope.length }].concat(
+      PROJECTS.map(p => ({ id: p.id, name: p.name, n: scope.filter(t => t.project === p.id).length }))
+    );
+    $('filters').replaceChildren(...items.map(i =>
+      h('button', { class: 'filter', type: 'button', 'aria-pressed': String(state.filter === i.id), onclick: () => { state.filter = i.id; render(); } }, i.name, h('b', null, i.n))
+    ));
+  }
+
+  function renderStats() {
+    const box = $('stats');
+    if (state.view === 'month') { box.replaceChildren(); return; }
+    const week = visible().filter(t => inWeek(t, state.weekStart));
+    const count = s => week.filter(t => t.status === s).length;
+    const over = week.filter(isOverdue).length;
+    const active = week.length - count('canceled');
+    const pct = active ? Math.round(count('done') / active * 100) : 0;
+    const parts = [
+      h('span', null, 'To do ', h('b', null, count('todo'))),
+      h('span', null, 'In progress ', h('b', null, count('doing'))),
+      h('span', null, 'Done ', h('b', null, count('done')))
+    ];
+    if (count('canceled')) parts.push(h('span', null, 'Canceled ', h('b', null, count('canceled'))));
+    if (over) parts.push(h('span', { class: 'over' }, 'Overdue ', h('b', null, over)));
+    parts.push(h('span', { class: 'meter', title: pct + '% done', 'aria-label': pct + '% done', role: 'img' }, h('i', { style: 'width:' + pct + '%' })));
+    box.replaceChildren(...parts);
+  }
+
+  function renderNotices() {
+    const n = $('notice');
+    let msg = '';
+    if (state.noDb) msg = 'Could not reach the task database. Open this page while signed in to claude.ai.';
+    else if (state.conn === 'bad') msg = 'Connection lost. Reload the page to see the latest changes.';
+    else if (!state.loaded) msg = 'Loading tasks.';
+    else if (state.view !== 'month' && !state.tasks.some(t => inWeek(t, state.weekStart))) {
+      msg = state.readOnly ? 'No tasks this week yet.' : 'No tasks this week yet. Add the first one above, or paste a list with one task per line.';
+    }
+    n.textContent = msg; n.hidden = !msg;
+
+    const c = $('carry');
+    const monIso = iso(state.weekStart);
+    const showCarry = !state.readOnly && !state.noDb && state.view !== 'month' && monIso === iso(planningMonday());
+    const left = showCarry ? state.tasks.filter(t => !closed(t) && t.day < monIso) : [];
+    if (left.length) {
+      const td = today();
+      const target = iso(td) >= monIso && iso(td) <= iso(addDays(state.weekStart, 4)) ? iso(td) : monIso;
+      c.replaceChildren(
+        h('span', null, left.length + (left.length === 1 ? ' unfinished task' : ' unfinished tasks') + ' left from earlier weeks.'),
+        h('button', { class: 'ghost', type: 'button', onclick: () => left.forEach(t => patchTask(t.id, { day: target })) }, 'Move to this week')
+      );
+    }
+    c.hidden = !left.length;
+  }
+
+  function renderForm() {
+    const show = !state.readOnly && !state.noDb && state.view !== 'month';
+    $('addForm').hidden = !show;
+    $('addOpen').hidden = !show;
+    const sel = $('addDay');
+    const days = weekDays().map(iso);
+    const keep = days.includes(sel.value) ? sel.value : (days.includes(iso(today())) ? iso(today()) : days[0]);
+    const signature = days.join();
+    if (sel.dataset.week !== signature) {
+      sel.replaceChildren(...weekDays().map((d, i) => h('option', { value: iso(d) }, DAYS_S[i] + ', ' + shortDate(d))));
+      sel.dataset.week = signature;
+    }
+    sel.value = keep;
+  }
+
+  function render() {
+    if (dragId) { pendingRender = true; return; }
+    const active = document.activeElement;
+    const typingIn = active && active.dataset ? active.dataset.commentFor : null;
+    const caret = typingIn ? [active.selectionStart, active.selectionEnd] : null;
+    renderHeader(); renderFilters(); renderStats(); renderNotices(); renderForm();
+    const view = state.view === 'month' ? renderMonth() : state.view === 'status' ? renderStatus() : renderWeek();
+    $('board').replaceChildren(view);
+    const focusId = typingIn || pendingFocus;
+    pendingFocus = null;
+    if (focusId) {
+      const el = document.querySelector('[data-comment-for="' + focusId + '"]');
+      if (el) { el.focus({ preventScroll: true }); if (caret) el.setSelectionRange(caret[0], caret[1]); }
+    }
+  }
+
+  function setView(v) {
+    state.view = v; store('ps.view', v);
+    if (v === 'month') state.month = new Date(addDays(state.weekStart, 3).getFullYear(), addDays(state.weekStart, 3).getMonth(), 1);
+    render();
+  }
+
+  function shift(dir) {
+    if (state.view === 'month') state.month = new Date(state.month.getFullYear(), state.month.getMonth() + dir, 1);
+    else state.weekStart = addDays(state.weekStart, 7 * dir);
+    render();
+  }
+
+  function renderEditSubs() {
+    $('editSubs').replaceChildren(...state.editSubs.map(s => h('div', { class: 'sub-row' },
+      h('input', { type: 'checkbox', checked: s.done || null, 'aria-label': 'Done', onchange: e => { s.done = e.target.checked; } }),
+      h('input', { class: 'input', type: 'text', value: s.title, 'aria-label': 'Subtask', oninput: e => { s.title = e.target.value; } }),
+      h('button', { class: 'sub-del', type: 'button', 'aria-label': 'Remove subtask', onclick: () => { state.editSubs = state.editSubs.filter(x => x !== s); renderEditSubs(); } }, '×')
+    )));
+  }
+  function addEditSub() {
+    const input = $('editSubNew');
+    state.editSubs = state.editSubs.concat(makeSubs(input.value));
+    input.value = '';
+    renderEditSubs();
+    input.focus();
+  }
+
+  function openEditor(id) {
+    const t = state.tasks.find(x => x.id === id);
+    if (!t) return;
+    state.editing = id;
+    $('editTitle').value = t.title;
+    $('editDesc').value = t.description;
+    state.editSubs = t.subtasks.map(s => ({ id: s.id, title: s.title, done: s.done }));
+    $('editSubNew').value = '';
+    renderEditSubs();
+    document.querySelector('input[name="editPriority"][value="' + t.priority + '"]').checked = true;
+    $('editProject').value = t.project;
+    $('editDay').value = t.day;
+    $('editDeadline').value = t.deadline;
+    document.querySelector('input[name="editStatus"][value="' + t.status + '"]').checked = true;
+    const del = $('editDelete');
+    del.textContent = 'Delete'; del.classList.remove('armed');
+    $('editor').showModal();
+  }
+
+  function effectiveMode() {
+    const root = document.documentElement;
+    if (root.dataset.mode === 'day' || root.dataset.mode === 'night') return root.dataset.mode;
+    const t = root.getAttribute('data-theme');
+    if (t === 'dark') return 'night';
+    if (t === 'light') return 'day';
+    return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day';
+  }
+  function paintMode() {
+    const m = effectiveMode();
+    document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+  }
+  function initMode() {
+    const saved = store('ps.mode');
+    if (saved === 'day' || saved === 'night') document.documentElement.dataset.mode = saved;
+    document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => {
+      document.documentElement.dataset.mode = b.dataset.mode;
+      store('ps.mode', b.dataset.mode);
+      paintMode();
+    }));
+    try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintMode); } catch (e) {}
+    try { new MutationObserver(paintMode).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); } catch (e) {}
+    paintMode();
+  }
+
+  function setup() {
+    initMode();
+    const projectOptions = () => PROJECTS.map(p => h('option', { value: p.id }, p.name));
+    $('addProject').replaceChildren(...projectOptions());
+    $('editProject').replaceChildren(...projectOptions());
+    const last = store('ps.project');
+    if (PROJECTS.some(p => p.id === last)) $('addProject').value = last;
+    $('addProject').addEventListener('change', e => store('ps.project', e.target.value));
+    $('addPriority').replaceChildren(h('option', { value: '' }, 'None'), ...PRIORITIES.map(p => h('option', { value: p.id }, p.name)));
+    $('editPriority').replaceChildren(...[{ id: '', name: 'None' }].concat(PRIORITIES).map(p =>
+      h('label', null, h('input', { type: 'radio', name: 'editPriority', value: p.id }), p.name)
+    ));
+    setupTray();
+    $('editSubAdd').addEventListener('click', addEditSub);
+    $('editSubNew').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addEditSub(); } });
+    $('editSubs').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.type === 'text') { e.preventDefault(); $('editSubNew').focus(); } });
+    document.addEventListener('pointerdown', e => {
+      if ($('menu').hidden || $('menu').contains(e.target) || (menuAnchor && menuAnchor.contains(e.target))) return;
+      closeMenu();
+    }, true);
+    document.addEventListener('keydown', e => {
+      const m = $('menu');
+      if (m.hidden) return;
+      if (e.key === 'Escape') { closeMenu(); return; }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const items = [...m.children], i = items.indexOf(document.activeElement);
+        items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+      }
+    });
+    window.addEventListener('resize', closeMenu);
+    window.addEventListener('scroll', closeMenu, true);
+    $('editStatus').replaceChildren(...STATUSES.map(s =>
+      h('label', null, h('input', { type: 'radio', name: 'editStatus', value: s.id }), s.name)
+    ));
+
+    $('prev').addEventListener('click', () => shift(-1));
+    $('next').addEventListener('click', () => shift(1));
+    $('now').addEventListener('click', () => {
+      state.weekStart = planningMonday();
+      state.month = new Date(state.weekStart.getFullYear(), state.weekStart.getMonth(), 1);
+      render();
+    });
+    document.querySelectorAll('#views button').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+    $('addDescToggle').addEventListener('click', e => {
+      const f = $('addDescField');
+      f.hidden = !f.hidden;
+      e.currentTarget.textContent = f.hidden ? '+ Description and subtasks' : '− Hide details';
+      e.currentTarget.setAttribute('aria-expanded', String(!f.hidden));
+      if (!f.hidden) $('addDesc').focus();
+    });
+    $('addOpen').addEventListener('click', e => {
+      const open = $('addForm').classList.toggle('is-open');
+      e.currentTarget.textContent = open ? '− Close' : '+ Add task';
+      e.currentTarget.setAttribute('aria-expanded', String(open));
+      if (open) $('addTitle').focus();
+    });
+    const title = $('addTitle');
+    const grow = () => { title.style.height = 'auto'; title.style.height = title.scrollHeight + 2 + 'px'; };
+    title.addEventListener('input', grow);
+    title.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('addForm').requestSubmit(); }
+    });
+    $('addForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const lines = title.value.split('\n').map(s => s.trim()).filter(Boolean);
+      if (!lines.length) { title.focus(); return; }
+      const base = { project: $('addProject').value, day: $('addDay').value, deadline: $('addDeadline').value || '', description: $('addDescField').hidden ? '' : $('addDesc').value.trim().slice(0, 5000), priority: $('addPriority').value, subtasks: $('addDescField').hidden ? [] : makeSubs($('addSubs').value) };
+      title.value = ''; $('addDeadline').value = ''; if (!$('addDescField').hidden) { $('addDesc').value = ''; $('addSubs').value = ''; } $('addPriority').value = ''; grow(); title.focus();
+      const pending = lines.map((line, i) => addTask(Object.assign({ title: line.slice(0, 500), createdAt: Date.now() + i }, base)));
+      render();
+      await Promise.all(pending);
+      if (lines.length > 1) toast('Added ' + lines.length + ' tasks');
+    });
+
+    $('editForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const titleVal = $('editTitle').value.trim();
+      if (!titleVal || !isDate($('editDay').value)) return;
+      const picked = parse($('editDay').value);
+      const snapped = snapWeekday(picked);
+      const statusEl = document.querySelector('input[name="editStatus"]:checked');
+      patchTask(state.editing, {
+        title: titleVal.slice(0, 500), description: $('editDesc').value.trim().slice(0, 5000), priority: document.querySelector('input[name="editPriority"]:checked').value, subtasks: state.editSubs.concat(makeSubs($('editSubNew').value)).map(s => ({ id: s.id, title: s.title.trim().slice(0, 300), done: !!s.done })).filter(s => s.title), project: $('editProject').value, status: statusEl.value,
+        day: iso(snapped), deadline: $('editDeadline').value || ''
+      });
+      $('editor').close();
+      if (snapped.getTime() !== picked.getTime()) toast('Weekends are not on the board, so this task moved to Monday.');
+    });
+    $('editCancel').addEventListener('click', () => $('editor').close());
+    $('editDelete').addEventListener('click', e => {
+      const del = e.currentTarget;
+      if (!del.classList.contains('armed')) { del.classList.add('armed'); del.textContent = 'Confirm delete'; return; }
+      const id = state.editing;
+      $('editor').close();
+      removeTask(id);
+      toast('Task deleted');
+    });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+  }
+
+  async function connect() {
+    for (let i = 0; i < 50 && !(window.claude && window.claude.use); i++) await new Promise(r => setTimeout(r, 100));
+    let db = null, user = null;
+    try {
+      if (window.claude && window.claude.use) [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    } catch (e) { db = null; }
+    if (!db) { state.noDb = true; state.readOnly = true; state.conn = 'bad'; render(); return; }
+    if (user) {
+      const can = await user.can('data.write');
+      if (can === false) state.readOnly = true;
+    }
+    col = db.collection('tasks');
+    commentsCol = db.collection('comments');
+    if (user) { me = await user.id(); viewerIsOwner = await user.isOwner(); }
+    commentsCol.onSnapshot(snap => {
+      const map = {};
+      snap.docs.forEach(d => {
+        const v = d.data();
+        if (typeof v.taskId === 'string' && typeof v.text === 'string' && v.text) {
+          (map[v.taskId] = map[v.taskId] || []).push({ id: d.id, taskId: v.taskId, text: v.text, at: typeof v.at === 'number' ? v.at : 0, by: typeof v.by === 'string' ? v.by : '' });
+        }
+      });
+      Object.values(map).forEach(a => a.sort((x, y) => x.at - y.at));
+      commentsByTask = map;
+      render();
+      const ids = [...new Set(snap.docs.map(d => d.data().by).filter(x => typeof x === 'string' && x))];
+      if (user && ids.length) user.profiles(ids).then(p => { ids.forEach(i => { names[i] = (p[i] && p[i].name) || 'Someone'; }); render(); });
+    }, () => {});
+    let confirmed = false;
+    const slow = setTimeout(() => { if (!confirmed) { state.conn = 'slow'; render(); } }, 10000);
+    col.onSnapshot(snap => {
+      state.tasks = snap.docs.map(d => clean(d.id, d.data())).filter(t => t.title);
+      if (!snap.metadata.fromCache) { confirmed = true; clearTimeout(slow); state.loaded = true; state.conn = 'live'; }
+      else if (snap.size) state.loaded = true;
+      render();
+    }, () => { clearTimeout(slow); confirmed = true; state.conn = 'bad'; state.loaded = true; render(); });
+    render();
+  }
+
+  setup();
+  render();
+  connect();
+})();
+</script>
+
+</body>
+</html>
