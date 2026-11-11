@@ -195,6 +195,8 @@
   --dur: 200ms;
   --dur-slow: 320ms;
   --ease: cubic-bezier(.2, .7, .2, 1);
+  --ease-spring: cubic-bezier(.3, 1.12, .5, 1); /* a hint of overshoot, for the nav blob and sheets */
+  --blob-dur: 420ms;
 
   /* ---------- Layers ---------- */
   --z-base: 0;

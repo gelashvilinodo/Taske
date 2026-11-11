@@ -92,7 +92,7 @@ body:has(.shell) { padding-bottom: max(var(--shell-pad), env(safe-area-inset-bot
   background: var(--gradient-accent);
   box-shadow: var(--shadow-glow), inset 0 1px 0 rgb(255 255 255 / .35);
 }
-.rail-items { display: flex; flex-direction: column; align-items: center; gap: var(--space-1-5); flex: 1; }
+.rail-items { position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--space-1-5); flex: 1; }
 .rail-foot { display: flex; flex-direction: column; align-items: center; gap: var(--space-1-5); }
 .rail-item {
   position: relative;
@@ -104,10 +104,36 @@ body:has(.shell) { padding-bottom: max(var(--shell-pad), env(safe-area-inset-bot
   text-decoration: none;
 }
 .rail-item:hover { background: var(--panel-bg-hover); color: var(--color-ink); }
-.rail-item[aria-current="page"] {
-  background: var(--gradient-accent); color: var(--color-on-accent);
+.rail-item > * { position: relative; z-index: 1; }
+.rail-item[aria-current="page"], .rail-more.is-current { color: var(--color-on-accent); background: transparent; }
+.rail-item[aria-current="page"]:hover, .rail-more.is-current:hover { background: transparent; color: var(--color-on-accent); }
+
+/* The blob: one glowing shape that slides to the active page and squishes on the way */
+.rail-blob {
+  position: absolute; left: 0; top: 0; z-index: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+}
+.rail-blob.is-ready { opacity: 1; }
+.rail-blob.is-animated {
+  transition: transform var(--blob-dur) var(--ease-spring), width var(--blob-dur) var(--ease-spring), height var(--blob-dur) var(--ease-spring);
+}
+.rail-blob-core {
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: var(--gradient-accent);
   box-shadow: var(--shadow-glow), inset 0 1px 0 rgb(255 255 255 / .3);
 }
+.rail-blob.is-animated .rail-blob-core { animation: blob-squish var(--blob-dur) var(--ease) both; }
+@keyframes blob-squish {
+  0% { transform: scale(1); }
+  40% { transform: scale(var(--stretch-x), var(--stretch-y)); }
+  100% { transform: scale(1); }
+}
+
+/* "More" arrow and its sheet exist for phones only */
+.rail-more, .rail-sheet { display: none; }
 .rail-label { display: none; }
 /* Tooltip label on hover (mouse only) */
 @media (hover: hover) and (min-width: 768px) {
@@ -913,7 +939,55 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   }
   .rail-label { display: block; font-size: 10px; font-weight: var(--weight-medium); line-height: 1; }
-  .rail-item[aria-current="page"] { box-shadow: var(--shadow-glow); }
+  .rail-blob { border-radius: var(--radius-md); }
+  .rail-extra, .rail-foot { display: none; }
+  .rail-more { display: flex; }
+  .rail-more svg { transition: transform var(--dur-slow) var(--ease-spring); }
+  .rail-more.is-open svg { transform: rotate(180deg); }
+  .rail-more.is-open:not(.is-current) { background: var(--panel-bg-hover); color: var(--color-ink); }
+
+  .rail-sheet {
+    position: absolute; right: var(--space-1); bottom: calc(100% + var(--space-2-5));
+    display: grid; gap: 2px;
+    min-width: 220px;
+    padding: var(--space-1-5);
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+    border: var(--border-width) solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--glass-highlight), var(--shadow-lg);
+    transform-origin: calc(100% - 30px) 100%;
+    opacity: 0; visibility: hidden;
+    transform: translateY(16px) scale(.86);
+    transition: opacity var(--dur) var(--ease), transform var(--dur-slow) var(--ease), visibility 0s linear var(--dur-slow);
+  }
+  .rail-sheet.is-open {
+    opacity: 1; visibility: visible; transform: none;
+    transition: opacity var(--dur) var(--ease), transform var(--blob-dur) var(--ease-spring), visibility 0s;
+  }
+  .rail-sheet-item {
+    all: unset; box-sizing: border-box; cursor: pointer;
+    display: flex; align-items: center; gap: var(--space-3);
+    min-height: 48px; padding: var(--space-1-5) var(--space-3) var(--space-1-5) var(--space-1-5);
+    border-radius: var(--radius-md);
+    font-size: var(--text-md); font-weight: var(--weight-medium);
+    opacity: 0; transform: translateY(10px);
+    transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease), background-color var(--dur-fast) var(--ease);
+  }
+  .rail-sheet.is-open .rail-sheet-item {
+    opacity: 1; transform: none;
+    transition-delay: calc(60ms + var(--i) * 50ms), calc(60ms + var(--i) * 50ms), 0s;
+  }
+  .rail-sheet-item:active, .rail-sheet-item:hover { background: var(--panel-bg-hover); }
+  .rail-sheet-item:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+  .rail-sheet-item[aria-current="page"] { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+  .rail-sheet-icon {
+    display: grid; place-items: center; width: 36px; height: 36px; flex: none;
+    border-radius: var(--radius-sm);
+    background: var(--panel-bg); box-shadow: inset 0 0 0 1px var(--panel-border);
+  }
+  .rail-sheet-item[aria-current="page"] .rail-sheet-icon { background: var(--gradient-accent); color: var(--color-on-accent); box-shadow: var(--shadow-glow); }
+  .rail-sheet-item.is-danger { color: var(--color-bad); }
 
   .page-head h1 { font-size: var(--text-xl); }
   .toolbar { flex-direction: column; align-items: stretch; flex-wrap: nowrap; }
@@ -993,6 +1067,10 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   .app > :nth-child(2) { animation-delay: 40ms; }
   .app > :nth-child(3) { animation-delay: 80ms; }
   .app > :nth-child(n+4) { animation-delay: 120ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rail-blob.is-animated { transition: none; }
+  .rail-blob.is-animated .rail-blob-core { animation: none; }
 }
 @keyframes rise { from { opacity: 0; transform: translateY(12px) scale(.98); } }
 @keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
