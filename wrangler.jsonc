@@ -10,6 +10,13 @@
     "binding": "ASSETS"
   },
   "observability": { "enabled": true },
+  // Served on taske.ge and www.taske.ge; Cloudflare creates the DNS records and SSL certificates.
+  // The workers.dev address stays on as a backup.
+  "routes": [
+    { "pattern": "taske.ge", "custom_domain": true },
+    { "pattern": "www.taske.ge", "custom_domain": true }
+  ],
+  "workers_dev": true,
   // Public Supabase settings for server code at runtime (the browser bundle gets them from .env.local at build).
   // Both are safe to publish; row level security protects the data. Never put the secret/service_role key here.
   "vars": {
