@@ -1,0 +1,55 @@
+/* Colour, type and theme tokens. Day/Night override the system theme via html[data-mode]. */
+:root {
+  --bg: #eff2f6; --surface: #ffffff; --sunk: #e3e8ef; --ink: #172130; --muted: #566478; --line: #d3dae4;
+  --accent: #2343c4; --on-accent: #ffffff; --accent-tint: #dfe6fb; --accent-ink: #1d379f; --today: #e4eafa;
+  --ok-bg: #dbefdf; --ok-fg: #1c6531; --warn-bg: #fbefca; --warn-fg: #6f5200; --bad-bg: #fbe0de; --bad-fg: #9c261f;
+  --skrib-bg: #e9e4fb; --skrib-fg: #4a2fa8; --sitbox-bg: #fde6d3; --sitbox-fg: #8f420e;
+  --modx-bg: #d6f0ea; --modx-fg: #0e5f50; --excity-bg: #dce9fb; --excity-fg: #1c5499; --other-bg: #e6e9ee; --other-fg: #4a5666;
+  --shadow: 0 1px 2px rgba(23, 33, 48, .08);
+  --n-skrib: #8b3dff; --n-sitbox: #ff6a00; --n-modx: #00b383; --n-excity: #0098e0; --n-other: #e0389b; --glow-pct: 32%;
+  --font-ui: var(--font-noto-sans), "Noto Sans Georgian", system-ui, sans-serif;
+  --font-display: var(--font-noto-serif), "Noto Serif Georgian", serif;
+  --font-data: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161f; --surface: #1a212d; --sunk: #232b39; --ink: #e8edf5; --muted: #9aa7b9; --line: #2e3748;
+    --accent: #8ea6ff; --on-accent: #101626; --accent-tint: #27325a; --accent-ink: #c3d0ff; --today: #1c2640;
+    --ok-bg: #1b3d27; --ok-fg: #93dca8; --warn-bg: #40340f; --warn-fg: #efd27a; --bad-bg: #4a2220; --bad-fg: #f6a9a3;
+    --skrib-bg: #32285a; --skrib-fg: #cdbfff; --sitbox-bg: #4a2f1a; --sitbox-fg: #f7be91;
+    --modx-bg: #16403a; --modx-fg: #8fe0cf; --excity-bg: #1e3553; --excity-fg: #a8ccf7; --other-bg: #2c3442; --other-fg: #b9c4d3;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    --n-skrib: #b46cff; --n-sitbox: #ff8a2a; --n-modx: #19f5b5; --n-excity: #2fd3ff; --n-other: #ff4fc3; --glow-pct: 55%;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161f; --surface: #1a212d; --sunk: #232b39; --ink: #e8edf5; --muted: #9aa7b9; --line: #2e3748;
+  --accent: #8ea6ff; --on-accent: #101626; --accent-tint: #27325a; --accent-ink: #c3d0ff; --today: #1c2640;
+  --ok-bg: #1b3d27; --ok-fg: #93dca8; --warn-bg: #40340f; --warn-fg: #efd27a; --bad-bg: #4a2220; --bad-fg: #f6a9a3;
+  --skrib-bg: #32285a; --skrib-fg: #cdbfff; --sitbox-bg: #4a2f1a; --sitbox-fg: #f7be91;
+  --modx-bg: #16403a; --modx-fg: #8fe0cf; --excity-bg: #1e3553; --excity-fg: #a8ccf7; --other-bg: #2c3442; --other-fg: #b9c4d3;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  --n-skrib: #b46cff; --n-sitbox: #ff8a2a; --n-modx: #19f5b5; --n-excity: #2fd3ff; --n-other: #ff4fc3; --glow-pct: 55%;
+  color-scheme: dark;
+}
+html:root[data-mode="day"] {
+  --bg: #eff2f6; --surface: #ffffff; --sunk: #e3e8ef; --ink: #172130; --muted: #566478; --line: #d3dae4;
+  --accent: #2343c4; --on-accent: #ffffff; --accent-tint: #dfe6fb; --accent-ink: #1d379f; --today: #e4eafa;
+  --ok-bg: #dbefdf; --ok-fg: #1c6531; --warn-bg: #fbefca; --warn-fg: #6f5200; --bad-bg: #fbe0de; --bad-fg: #9c261f;
+  --skrib-bg: #e9e4fb; --skrib-fg: #4a2fa8; --sitbox-bg: #fde6d3; --sitbox-fg: #8f420e;
+  --modx-bg: #d6f0ea; --modx-fg: #0e5f50; --excity-bg: #dce9fb; --excity-fg: #1c5499; --other-bg: #e6e9ee; --other-fg: #4a5666;
+  --shadow: 0 1px 2px rgba(23, 33, 48, .08);
+  --n-skrib: #8b3dff; --n-sitbox: #ff6a00; --n-modx: #00b383; --n-excity: #0098e0; --n-other: #e0389b; --glow-pct: 32%;
+  color-scheme: light;
+}
+html:root[data-mode="night"] {
+  --bg: #11161f; --surface: #1a212d; --sunk: #232b39; --ink: #e8edf5; --muted: #9aa7b9; --line: #2e3748;
+  --accent: #8ea6ff; --on-accent: #101626; --accent-tint: #27325a; --accent-ink: #c3d0ff; --today: #1c2640;
+  --ok-bg: #1b3d27; --ok-fg: #93dca8; --warn-bg: #40340f; --warn-fg: #efd27a; --bad-bg: #4a2220; --bad-fg: #f6a9a3;
+  --skrib-bg: #32285a; --skrib-fg: #cdbfff; --sitbox-bg: #4a2f1a; --sitbox-fg: #f7be91;
+  --modx-bg: #16403a; --modx-fg: #8fe0cf; --excity-bg: #1e3553; --excity-fg: #a8ccf7; --other-bg: #2c3442; --other-fg: #b9c4d3;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  --n-skrib: #b46cff; --n-sitbox: #ff8a2a; --n-modx: #19f5b5; --n-excity: #2fd3ff; --n-other: #ff4fc3; --glow-pct: 55%;
+  color-scheme: dark;
+}
