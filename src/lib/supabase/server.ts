@@ -22,3 +22,18 @@ export async function isSignedIn() {
   const { data } = await supabase.auth.getClaims();
   return Boolean(data?.claims);
 }
+
+/**
+ * Which one-tap providers are switched on in Supabase (Authentication → Sign In / Providers).
+ * Read from the public settings endpoint so a provider's button appears as soon as it is enabled.
+ */
+export async function enabledProviders(): Promise<('apple' | 'google')[]> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_KEY }, cache: 'no-store' });
+    if (!res.ok) return ['google'];
+    const external = ((await res.json()) as { external?: Record<string, boolean> }).external ?? {};
+    return (['apple', 'google'] as const).filter(p => external[p]);
+  } catch {
+    return ['google'];
+  }
+}
