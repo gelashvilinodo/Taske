@@ -5,8 +5,8 @@ export type RawTask = { id: string } & Record<string, unknown>;
 export type RawProject = { id: string } & Record<string, unknown>;
 export type Table = 'tasks' | 'comments' | 'projects';
 
-/** missing_table: the database has not been set up for this feature yet (a migration was not run). */
-export interface StoreError { code: 'unavailable' | 'quota_exceeded' | 'forbidden' | 'missing_table' | 'unknown'; message?: string }
+/** missing_table / missing_column: the database has not been set up for this feature yet (a migration was not run). */
+export interface StoreError { code: 'unavailable' | 'quota_exceeded' | 'forbidden' | 'missing_table' | 'missing_column' | 'unknown'; message?: string }
 
 /**
  * Persistence for tasks, comments and projects. Two implementations: Supabase (signed-in, synced)

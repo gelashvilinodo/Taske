@@ -454,11 +454,36 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
   transform: translateY(-2px);
   box-shadow: inset 3px 0 0 var(--pj), var(--glass-highlight), 0 12px 24px -12px color-mix(in srgb, var(--pj) 60%, transparent);
 }
-.card.dragging { transform: none; }
 
 .card.is-canceled { opacity: .7; }
-.card[draggable="true"] { cursor: grab; }
-.card.dragging { opacity: .45; }
+/* Moving cards (see TaskDrag): the card lifts into a ghost that follows the pointer,
+   and the list opens a gap where it will land. */
+.card[data-task-id] { touch-action: manipulation; }
+@media (pointer: fine) { .card[data-task-id] { cursor: grab; } }
+@media (pointer: coarse) { .card { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } }
+.card.is-drag-source { display: none; }
+.drop-slot {
+  flex: none;
+  border-radius: var(--radius-lg);
+  border: 1.5px dashed color-mix(in srgb, var(--color-accent) 70%, transparent);
+  background: var(--color-accent-soft);
+  animation: slot-open var(--dur) var(--ease);
+}
+@keyframes slot-open { from { height: 0; opacity: 0; } }
+.drag-ghost {
+  position: fixed; left: 0; top: 0; z-index: var(--z-menu);
+  pointer-events: none;
+  will-change: transform;
+}
+.drag-ghost .card {
+  transform: rotate(-1.5deg) scale(1.03);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+  box-shadow: inset 3px 0 0 var(--pj), var(--glass-highlight), 0 22px 44px -14px rgb(0 0 0 / .55), var(--shadow-glow);
+  animation: lift var(--dur) var(--ease-spring);
+}
+@keyframes lift { from { transform: none; box-shadow: none; } }
+html.is-dragging-task, html.is-dragging-task * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
 
 .card-title {
   all: unset; display: block;
@@ -680,7 +705,7 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 .drag-edge {
   position: fixed; top: 0; bottom: 0; z-index: var(--z-tray);
   width: var(--drag-edge-w);
-  pointer-events: auto;
+  pointer-events: none; /* the drag reads the pointer position itself */
 }
 .drag-edge-left .drag-edge-card { left: var(--space-3); transform: translateY(-50%); }
 .drag-edge-right .drag-edge-card { right: var(--space-3); transform: translateY(-50%); }
@@ -702,7 +727,11 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   box-shadow: var(--glass-highlight), var(--shadow-lg);
   pointer-events: none;
 }
-.drag-edge.is-over .drag-edge-card { border-color: var(--color-accent); box-shadow: var(--glass-highlight), var(--shadow-glow); }
+.drag-edge-card { opacity: .55; transition: opacity var(--dur) var(--ease), scale var(--dur) var(--ease-spring); scale: .9; }
+.drag-edge.is-over .drag-edge-card { opacity: 1; scale: 1; border-color: var(--color-accent); box-shadow: var(--glass-highlight), var(--shadow-glow); }
+@media (max-width: 767px) {
+  .drag-edge-card { width: 92px; padding: var(--space-2) var(--space-1-5); }
+}
 .drag-edge-arrow { font-size: var(--text-xl); line-height: 1; color: var(--color-accent-ink); }
 .drag-edge-label { font-size: var(--text-2xs); font-weight: var(--weight-semibold); }
 .drag-edge-range { font: var(--weight-medium) var(--text-2xs) / 1.2 var(--font-data); color: var(--color-muted); }

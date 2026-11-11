@@ -1,30 +1,39 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
+import type { Task } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
+import { useDropZone } from './TaskDrag';
+import TaskCard from './TaskCard';
 
-/** A board column that accepts dragged task cards. */
-export default function DropColumn({ className, label, onDropTask, children }: {
-  className: string; label: string; onDropTask: (id: string) => void; children: ReactNode;
+/**
+ * A board column that lists task cards and accepts dragged ones. While a card is dragged over it,
+ * a gap opens where the card will land; `onDropTask` gets the task id and that position.
+ */
+export default function DropColumn({ className, label, zone, tasks, showDay = false, header, empty, onDropTask }: {
+  className: string; label: string; zone: string; tasks: Task[]; showDay?: boolean;
+  header: ReactNode; empty: ReactNode; onDropTask: (id: string, index: number) => void;
 }) {
-  const { readOnly, tasks, setDragId } = useWorkspace();
-  const [over, setOver] = useState(false);
-  if (readOnly) return <section className={className} aria-label={label}>{children}</section>;
+  const { readOnly } = useWorkspace();
+  const { drag, over, slotAt, slotHeight } = useDropZone(zone, onDropTask, !readOnly);
+  const others = drag ? tasks.filter(t => t.id !== drag.id) : tasks;
+  const slot = <div className="drop-slot" style={{ height: slotHeight }} aria-hidden="true" />;
   return (
-    <section
-      className={className + (over ? ' is-over' : '')}
-      aria-label={label}
-      onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setOver(true); }}
-      onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
-      onDrop={e => {
-        e.preventDefault();
-        setOver(false);
-        setDragId(null);
-        const id = e.dataTransfer.getData('text/plain');
-        if (tasks.some(t => t.id === id)) onDropTask(id);
-      }}
-    >
-      {children}
+    <section className={className + (over ? ' is-over' : '')} aria-label={label} data-drop={readOnly ? undefined : zone}>
+      {header}
+      <div className="list">
+        {tasks.map(t => {
+          const i = others.indexOf(t);
+          return (
+            <Fragment key={t.id}>
+              {over && i === slotAt && slot}
+              <TaskCard t={t} showDay={showDay} />
+            </Fragment>
+          );
+        })}
+        {over && slotAt >= others.length && slot}
+        {!tasks.length && !over && empty}
+      </div>
     </section>
   );
 }

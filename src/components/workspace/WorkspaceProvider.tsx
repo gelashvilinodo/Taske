@@ -49,8 +49,6 @@ interface Workspace {
   toastMsg: string;
   editingId: string | null;
   openEditor: (id: string | null) => void;
-  dragId: string | null;
-  setDragId: (id: string | null) => void;
 }
 
 const Ctx = createContext<Workspace | null>(null);
@@ -79,7 +77,6 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
   const [filter, setFilter] = useState('all');
   const [toastMsg, setToastMsg] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [dragId, setDragId] = useState<string | null>(null);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const toast = useCallback((msg: string) => {
@@ -167,6 +164,7 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
         if (e?.code === 'forbidden') { setReadOnly(true); toast('You can view this page but not change it.'); }
         else if (e?.code === 'quota_exceeded') toast('Storage is full. Delete old tasks and try again.');
         else if (e?.code === 'missing_table') toast('Projects are not set up in the database yet, so this was not saved.');
+        else if (e?.code === 'missing_column') toast('Task order is not set up in the database yet, so the new order was not saved.');
         else toast('Could not save. Check your connection and try again.');
       })
       .finally(() => { pending.current--; scheduleReload(table); });
@@ -176,7 +174,8 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
 
   const addTasks = useCallback(async (list: TaskFields[]) => {
     const created = list.map(f => ({ ...f, id: crypto.randomUUID() }));
-    setTasks(ts => ts.concat(created));
+    // New tasks go to the end of their day; position is only stored once a task is reordered.
+    setTasks(ts => ts.concat(created.map(c => ({ ...c, position: c.position ?? c.createdAt }))));
     await Promise.all(created.map(({ id, ...fields }) => run(id, 'tasks', () => store.insertTask(id, fields))));
   }, [run, store]);
 
@@ -238,7 +237,7 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
     mode: store.kind, account, tasks, projects, projectsReady, projectById, comments, names, loaded, conn, readOnly,
     weekStart, setWeekStart, month, setMonth, filter, setFilter,
     addTasks, patchTask, removeTask, addComment, removeComment, addProject, updateProject, removeProject, signOut,
-    toast, toastMsg, editingId, openEditor: setEditingId, dragId, setDragId,
+    toast, toastMsg, editingId, openEditor: setEditingId,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

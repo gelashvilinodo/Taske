@@ -5,7 +5,7 @@ import type { RawProject, RawTask, StoreError, TaskStore } from './types';
 // App field name → database column.
 const TASK_COLUMNS: Record<keyof TaskFields, string> = {
   title: 'title', description: 'description', priority: 'priority', subtasks: 'subtasks',
-  project: 'project', status: 'status', day: 'day', deadline: 'deadline', createdAt: 'created_at',
+  project: 'project', status: 'status', day: 'day', deadline: 'deadline', createdAt: 'created_at', position: 'position',
 };
 
 function toRow(fields: TaskPatch) {
@@ -21,6 +21,7 @@ function fromRow(r: Record<string, unknown>): RawTask {
   (Object.keys(TASK_COLUMNS) as (keyof TaskFields)[]).forEach(k => { out[k] = r[TASK_COLUMNS[k]]; });
   out.deadline = r.deadline || '';
   out.createdAt = Number(r.created_at) || 0;
+  out.position = typeof r.position === 'number' ? r.position : undefined;
   return out;
 }
 
@@ -31,6 +32,7 @@ function check({ error }: { error: { message: string; code?: string } | null }) 
     code: offline ? 'unavailable'
       : error.code === '42501' ? 'forbidden'
       : error.code === 'PGRST205' || error.code === '42P01' ? 'missing_table'
+      : error.code === 'PGRST204' || error.code === '42703' ? 'missing_column'
       : 'unknown',
     message: error.message,
   };

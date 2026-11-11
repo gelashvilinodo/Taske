@@ -6,6 +6,7 @@ import { closed, PRIORITIES, prioName, STATUSES, statusName, type Task } from '@
 import { ProjectChip, projectStyle } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import MenuButton from './MenuButton';
+import { useTaskDrag } from './TaskDrag';
 
 function DeadlineChip({ t }: { t: Task }) {
   if (!t.deadline) return null;
@@ -103,13 +104,14 @@ function Comments({ t, writable, focusSignal }: { t: Task; writable: boolean; fo
 }
 
 /** One task on the board. `showDay` adds the day chip (used where cards are not grouped by day). */
-export default function TaskCard({ t, showDay = false }: { t: Task; showDay?: boolean }) {
-  const { readOnly, patchTask, openEditor, setDragId, comments, projectById } = useWorkspace();
-  const writable = !readOnly;
+export default function TaskCard({ t, showDay = false, ghost = false }: { t: Task; showDay?: boolean; ghost?: boolean }) {
+  const { readOnly, patchTask, openEditor, comments, projectById } = useWorkspace();
+  const { drag, begin } = useTaskDrag();
+  const writable = !readOnly && !ghost;
+  const lifted = !ghost && drag?.id === t.id;
   const project = projectById(t.project);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [focusSignal, setFocusSignal] = useState(0);
-  const [dragging, setDragging] = useState(false);
   const n = (comments[t.id] || []).length;
   const d = parse(t.day);
 
@@ -117,17 +119,10 @@ export default function TaskCard({ t, showDay = false }: { t: Task; showDay?: bo
 
   return (
     <article
-      className={'card' + (t.status === 'done' ? ' is-done' : '') + (t.status === 'canceled' ? ' is-canceled' : '') + (dragging ? ' dragging' : '')}
+      className={'card' + (t.status === 'done' ? ' is-done' : '') + (t.status === 'canceled' ? ' is-canceled' : '') + (lifted ? ' is-drag-source' : '') + (ghost ? ' is-ghost' : '')}
       style={closed(t) ? undefined : projectStyle(project, '--pj')}
-      draggable={writable || undefined}
-      onDragStart={e => {
-        e.dataTransfer.setData('text/plain', t.id);
-        e.dataTransfer.effectAllowed = 'move';
-        setDragging(true);
-        // Changing the page during dragstart can cancel the drag, so show the tray a tick later.
-        setTimeout(() => setDragId(t.id), 0);
-      }}
-      onDragEnd={() => { setDragging(false); setDragId(null); }}
+      data-task-id={ghost ? undefined : t.id}
+      onPointerDown={writable ? e => begin(e, t.id) : undefined}
     >
       {writable
         ? <button className="card-title" type="button" onClick={() => openEditor(t.id)}>{t.title}</button>

@@ -61,8 +61,11 @@ export interface Task {
   /** YYYY-MM-DD or '' */
   deadline: string;
   createdAt: number;
+  /** Manual order within the day (lower first). Tasks never reordered use their creation time. */
+  position: number;
 }
-export type TaskFields = Omit<Task, 'id'>;
+/** Fields for a new task; position is optional and defaults to the creation time. */
+export type TaskFields = Omit<Task, 'id' | 'position'> & { position?: number };
 export type TaskPatch = Partial<TaskFields>;
 
 export interface Comment { id: string; taskId: string; text: string; at: number; by: string }
@@ -87,7 +90,20 @@ export function cleanTask(id: string, d: Record<string, unknown>, fallbackDay: s
     day,
     deadline: isDate(d.deadline) ? d.deadline : '',
     createdAt: typeof d.createdAt === 'number' ? d.createdAt : 0,
+    position: typeof d.position === 'number' && isFinite(d.position) ? d.position
+      : typeof d.createdAt === 'number' ? d.createdAt : 0,
   };
+}
+
+/** Order inside one day: the user's manual order. */
+export const byPosition = (a: Task, b: Task) => a.position - b.position || a.createdAt - b.createdAt;
+
+/** Position for a task dropped between `before` and `after` (either may be missing). */
+export function positionBetween(before: Task | undefined, after: Task | undefined): number {
+  if (before && after) return (before.position + after.position) / 2;
+  if (before) return before.position + 1024;
+  if (after) return after.position - 1024;
+  return Date.now();
 }
 
 const rank: Record<StatusId, number> = { doing: 0, todo: 1, done: 2, canceled: 3 };
