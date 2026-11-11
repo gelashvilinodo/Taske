@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { addDays, iso, isoWeek, MONTHS, monthWeeks, planningMonday, rangeLabel } from '@/lib/dates';
+import { iso, isoWeek, MONTHS, monthWeeks, planningMonday, rangeLabel, weekEnd } from '@/lib/dates';
 import { inWeek } from '@/lib/tasks/model';
 import { ProjectChip } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
@@ -29,7 +29,7 @@ export default function MonthOverview() {
           <button key={iso(mon)} className={'wk' + (iso(mon) === nowMon ? ' is-now' : '')} type="button"
             onClick={() => { setWeekStart(mon); router.push('/board'); }}>
             <span className="wk-num">Wk {isoWeek(mon)}</span>
-            <span className="wk-range">{rangeLabel(mon, addDays(mon, 4), MONTHS)}</span>
+            <span className="wk-range">{rangeLabel(mon, weekEnd(mon), MONTHS)}</span>
             <span className="meta">
               {projects.map(p => {
                 const n = tasks.filter(t => t.project === p.id).length;

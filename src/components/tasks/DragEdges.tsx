@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { usePathname } from 'next/navigation';
-import { addDays, MONTHS_S, rangeLabel } from '@/lib/dates';
+import { addDays, MONTHS_S, rangeLabel, weekEnd } from '@/lib/dates';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 
 const FIRST_STEP_MS = 550;  // hold this long at an edge before the week changes
@@ -70,7 +70,7 @@ export default function DragEdges() {
           style={{ '--edge-step': (steps ? REPEAT_MS : FIRST_STEP_MS) + 'ms' } as CSSProperties}>
           <span className="drag-edge-arrow">{dir < 0 ? '←' : '→'}</span>
           <span className="drag-edge-label">{dir < 0 ? 'Previous week' : 'Next week'}</span>
-          <span className="drag-edge-range">{rangeLabel(target, addDays(target, 4), MONTHS_S)}</span>
+          <span className="drag-edge-range">{rangeLabel(target, weekEnd(target), MONTHS_S)}</span>
           <span className="drag-edge-fill" />
         </span>
       </div>

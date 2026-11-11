@@ -1,6 +1,6 @@
 'use client';
 
-import { addDays, iso, planningMonday, today } from '@/lib/dates';
+import { iso, planningMonday, today, weekEnd } from '@/lib/dates';
 import { closed, inWeek } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 
@@ -19,7 +19,7 @@ export default function WeekNotices() {
   const showCarry = !readOnly && monIso === iso(planningMonday());
   const left = showCarry ? tasks.filter(t => !closed(t) && t.day < monIso) : [];
   const td = iso(today());
-  const target = td >= monIso && td <= iso(addDays(weekStart, 4)) ? td : monIso;
+  const target = td >= monIso && td <= iso(weekEnd(weekStart)) ? td : monIso;
 
   return (
     <>

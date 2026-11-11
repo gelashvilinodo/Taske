@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { iso, isDate, parse, snapWeekday } from '@/lib/dates';
+import { isDate } from '@/lib/dates';
 import { makeSubs, PRIORITIES, STATUSES, type PriorityId, type StatusId, type Subtask } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import ProjectSelect from '@/components/projects/ProjectSelect';
@@ -46,8 +46,6 @@ export default function TaskEditor() {
     if (!draft || !editingId) return;
     const title = draft.title.trim();
     if (!title || !isDate(draft.day)) return;
-    const picked = parse(draft.day);
-    const snapped = snapWeekday(picked);
     patchTask(editingId, {
       title: title.slice(0, 500),
       description: draft.description.trim().slice(0, 5000),
@@ -57,11 +55,10 @@ export default function TaskEditor() {
         .filter(s => s.title),
       project: projects.some(p => p.id === draft.project) ? draft.project : '',
       status: draft.status,
-      day: iso(snapped),
+      day: draft.day,
       deadline: draft.deadline || '',
     });
     close();
-    if (snapped.getTime() !== picked.getTime()) toast('Weekends are not on the board, so this task moved to Monday.');
   };
 
   const del = () => {

@@ -376,7 +376,10 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
 .meter i { display: block; height: 100%; border-radius: inherit; background: var(--gradient-accent); }
 
 /* ---------- Board ---------- */
-.week { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); align-items: stretch; }
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--space-3); align-items: stretch; }
+/* Weekend columns are a touch quieter so the working days lead */
+.column.is-weekend:not(.is-today) { background: color-mix(in srgb, var(--panel-bg) 60%, transparent); border-style: dashed; }
+.column.is-weekend .col-name { color: var(--color-muted); }
 .status-board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); align-items: stretch; }
 .column {
   display: flex; flex-direction: column; gap: var(--space-1-5);
@@ -838,23 +841,13 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   .column { padding: var(--space-3); }
 }
 
-/* lg: laptops. Five day columns stay; the add form tightens */
-@media (max-width: 1279px) {
-  .add { grid-template-columns: minmax(0, 1fr) 170px 110px 140px 150px auto; }
-  .conn span { display: none; }
-  .conn { width: var(--control-md); padding: 0; justify-content: center; }
-}
-
-/* md: tablets. Days scroll sideways and snap, so each column keeps a readable width */
-@media (max-width: 1023px) {
-  .add { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .add .field-title, .add .primary { grid-column: 1 / -1; }
-  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
+/* Below xl seven columns get too narrow, so the week scrolls sideways and snaps per day.
+   About four days show at once; the board scrolls to today on its own. */
+@media (max-width: 1439px) and (min-width: 768px) {
   .week {
     grid-template-columns: none;
     grid-auto-flow: column;
-    grid-auto-columns: minmax(260px, 42%);
+    grid-auto-columns: minmax(220px, calc((100% - 3 * var(--space-3)) / 4));
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
@@ -864,6 +857,24 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
     scroll-padding-inline: var(--window-pad);
   }
   .week .column { scroll-snap-align: start; }
+}
+
+/* lg: laptops. The add form tightens */
+@media (max-width: 1279px) {
+  /* Task title gets its own row; project, priority, day and deadline share the next one */
+  .add { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .add .field-title { grid-column: 1 / -1; }
+  .add .primary { grid-column: 4; }
+  .conn span { display: none; }
+  .conn { width: var(--control-md); padding: 0; justify-content: center; }
+}
+
+/* md: tablets. Days scroll sideways and snap, so each column keeps a readable width */
+@media (max-width: 1023px) {
+  .add .primary { grid-column: 1 / -1; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .week { grid-auto-columns: minmax(240px, 42%); }
   .status-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .wk { grid-template-columns: 60px minmax(0, 1fr) 64px; }

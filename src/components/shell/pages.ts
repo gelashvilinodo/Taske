@@ -2,7 +2,7 @@ import { IconBoard, IconCalendar, IconClock, IconFolder, IconList, IconTable } f
 
 /** Workspace pages, in sidebar order. `hint` is the line under the page title. */
 export const PAGES = [
-  { href: '/board', label: 'Board', hint: 'Your week, Monday to Friday', Icon: IconBoard },
+  { href: '/board', label: 'Board', hint: 'Your week, Monday to Sunday', Icon: IconBoard },
   { href: '/list', label: 'List', hint: 'This week by status', Icon: IconList },
   { href: '/calendar', label: 'Calendar', hint: 'The month at a glance', Icon: IconCalendar },
   { href: '/content-calendar', label: 'Content calendar', hint: 'Posts and publishing by the hour', Icon: IconClock },

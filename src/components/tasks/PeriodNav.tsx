@@ -1,6 +1,6 @@
 'use client';
 
-import { addDays, isoWeek, MONTHS, monthStart, planningMonday, rangeLabel } from '@/lib/dates';
+import { addDays, isoWeek, MONTHS, monthStart, planningMonday, rangeLabel, weekEnd } from '@/lib/dates';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 
 /** Previous / next / back-to-now controls with the period title. */
@@ -22,7 +22,7 @@ export default function PeriodNav({ unit }: { unit: 'week' | 'month' }) {
         <button className="icon-btn" type="button" aria-label={isMonth ? 'Previous month' : 'Previous week'} onClick={() => shift(-1)}>←</button>
         <div className="period">
           <span className="eyebrow">{isMonth ? month.getFullYear() : 'Week ' + isoWeek(weekStart) + ' · ' + addDays(weekStart, 3).getFullYear()}</span>
-          <h2>{isMonth ? MONTHS[month.getMonth()] : rangeLabel(weekStart, addDays(weekStart, 4), MONTHS)}</h2>
+          <h2>{isMonth ? MONTHS[month.getMonth()] : rangeLabel(weekStart, weekEnd(weekStart), MONTHS)}</h2>
         </div>
         <button className="icon-btn" type="button" aria-label={isMonth ? 'Next month' : 'Next week'} onClick={() => shift(1)}>→</button>
         <button className="ghost" type="button" onClick={now}>{isMonth ? 'This month' : 'This week'}</button>

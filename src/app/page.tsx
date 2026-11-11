@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 const FEATURES = [
-  { title: 'Week board', text: 'Monday to Friday at a glance. Drag tasks between days.' },
+  { title: 'Week board', text: 'The whole week at a glance, weekend included. Drag tasks between days and weeks.' },
   { title: 'Status list', text: 'See what is to do, in progress and done this week.' },
   { title: 'Calendar', text: 'Month overview now; Google Calendar sync is on the way.' },
   { title: 'Table', text: 'Every task in one sortable list.' },

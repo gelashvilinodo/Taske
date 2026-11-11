@@ -1,4 +1,4 @@
-import { addDays, iso, isDate, parse, snapWeekday, today } from '@/lib/dates';
+import { iso, isDate, today, weekEnd } from '@/lib/dates';
 
 /** A project the user creates: a name, a colour and an optional logo. */
 export interface Project {
@@ -56,7 +56,7 @@ export interface Task {
   /** Project id, or '' for no project */
   project: string;
   status: StatusId;
-  /** YYYY-MM-DD, always a weekday */
+  /** YYYY-MM-DD, any day of the week */
   day: string;
   /** YYYY-MM-DD or '' */
   deadline: string;
@@ -72,7 +72,7 @@ export const prioName = (id: string) => PRIORITIES.find(p => p.id === id)?.name 
 
 /** Normalises a stored record into a Task, tolerating old or partial data. */
 export function cleanTask(id: string, d: Record<string, unknown>, fallbackDay: string): Task {
-  const day = isDate(d.day) ? iso(snapWeekday(parse(d.day))) : fallbackDay;
+  const day = isDate(d.day) ? d.day : fallbackDay;
   const subs = Array.isArray(d.subtasks) ? (d.subtasks as Record<string, unknown>[]) : [];
   return {
     id,
@@ -99,7 +99,7 @@ export function compareTasks(a: Task, b: Task) {
     || (a.deadline || '9999').localeCompare(b.deadline || '9999')
     || a.createdAt - b.createdAt;
 }
-export const inWeek = (t: Task, mon: Date) => t.day >= iso(mon) && t.day <= iso(addDays(mon, 4));
+export const inWeek = (t: Task, mon: Date) => t.day >= iso(mon) && t.day <= iso(weekEnd(mon));
 export const isOverdue = (t: Task) => !!t.deadline && !closed(t) && t.deadline < iso(today());
 
 let subCounter = 0;
