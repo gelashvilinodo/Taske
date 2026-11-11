@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { IconMoon, IconSun } from './icons';
 
 type Mode = 'day' | 'night';
 
@@ -10,7 +11,7 @@ function effectiveMode(): Mode {
   return matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day';
 }
 
-/** Day / Night switch. Without a saved choice the page follows the system theme. */
+/** Round Day / Night button. Without a saved choice the page follows the system theme. */
 export default function ThemeToggle() {
   const [mode, setMode] = useState<Mode | null>(null);
 
@@ -22,16 +23,16 @@ export default function ThemeToggle() {
     return () => mq.removeEventListener('change', sync);
   }, []);
 
-  const pick = (m: Mode) => {
-    document.documentElement.dataset.mode = m;
-    try { localStorage.setItem('ps.mode', m); } catch { /* storage blocked */ }
-    setMode(m);
+  const next: Mode = mode === 'night' ? 'day' : 'night';
+  const pick = () => {
+    document.documentElement.dataset.mode = next;
+    try { localStorage.setItem('ps.mode', next); } catch { /* storage blocked */ }
+    setMode(next);
   };
 
   return (
-    <div className="seg" aria-label="Theme">
-      <button type="button" aria-pressed={mode === 'day'} onClick={() => pick('day')}>Day</button>
-      <button type="button" aria-pressed={mode === 'night'} onClick={() => pick('night')}>Night</button>
-    </div>
+    <button className="round-btn" type="button" onClick={pick} aria-label={next === 'day' ? 'Switch to Day' : 'Switch to Night'} title={next === 'day' ? 'Day' : 'Night'}>
+      {mode === 'night' ? <IconSun /> : <IconMoon />}
+    </button>
   );
 }

@@ -41,8 +41,9 @@ export default function AddTaskForm() {
   useEffect(() => {
     const onAdd = (e: Event) => {
       setOpen(true);
-      setDay((e as CustomEvent<string>).detail);
-      titleRef.current?.focus();
+      const d = (e as CustomEvent<string>).detail;
+      if (d) setDay(d);
+      requestAnimationFrame(() => { titleRef.current?.focus(); titleRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
     };
     window.addEventListener(ADD_ON_DAY, onAdd);
     return () => window.removeEventListener(ADD_ON_DAY, onAdd);

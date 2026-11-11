@@ -1,0 +1,12 @@
+import { IconBoard, IconCalendar, IconClock, IconList, IconTable } from './icons';
+
+/** Workspace pages, in sidebar order. `hint` is the line under the page title. */
+export const PAGES = [
+  { href: '/board', label: 'Board', hint: 'Your week, Monday to Friday', Icon: IconBoard },
+  { href: '/list', label: 'List', hint: 'This week by status', Icon: IconList },
+  { href: '/calendar', label: 'Calendar', hint: 'The month at a glance', Icon: IconCalendar },
+  { href: '/content-calendar', label: 'Content calendar', hint: 'Posts and publishing by the hour', Icon: IconClock },
+  { href: '/table', label: 'Table', hint: 'Every task in one sortable list', Icon: IconTable },
+];
+
+export const pageFor = (path: string) => PAGES.find(p => path === p.href || path.startsWith(p.href + '/')) ?? PAGES[0];

@@ -7,18 +7,18 @@ import PeriodNav from './PeriodNav';
 import WeekNotices from './WeekNotices';
 import WeekStats from './WeekStats';
 
-/** Everything above a week view: period controls, entry form, notices, filters and counts. */
+/** Everything above a week view: stat cards, period and filter toolbar, entry form and notices. */
 export default function WeekToolbar() {
   const { readOnly } = useWorkspace();
   return (
     <>
-      <PeriodNav unit="week" />
+      <WeekStats />
+      <div className="toolbar">
+        <PeriodNav unit="week" />
+        <Filters scope="week" />
+      </div>
       {!readOnly && <AddTaskForm />}
       <WeekNotices />
-      <div className="bar">
-        <Filters scope="week" />
-        <WeekStats />
-      </div>
     </>
   );
 }

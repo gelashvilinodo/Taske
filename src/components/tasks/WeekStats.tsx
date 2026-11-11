@@ -2,8 +2,10 @@
 
 import { inWeek, isOverdue } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
+import { IconAlert, IconDoing, IconDone, IconTodo } from '@/components/shell/icons';
 import { useVisibleTasks } from './Filters';
 
+/** Four glass stat cards for the week on screen: to do, in progress, done, overdue. */
 export default function WeekStats() {
   const { weekStart } = useWorkspace();
   const week = useVisibleTasks().filter(t => inWeek(t, weekStart));
@@ -11,14 +13,22 @@ export default function WeekStats() {
   const over = week.filter(isOverdue).length;
   const active = week.length - count('canceled');
   const pct = active ? Math.round(count('done') / active * 100) : 0;
+  const cards = [
+    { key: 'todo', label: 'To do', value: count('todo'), Icon: IconTodo },
+    { key: 'doing', label: 'In progress', value: count('doing'), Icon: IconDoing },
+    { key: 'done', label: pct + '% of the week done', value: count('done'), Icon: IconDone, meter: pct },
+    { key: 'over', label: 'Overdue', value: over, Icon: IconAlert },
+  ];
   return (
-    <div className="stats">
-      <span>To do <b>{count('todo')}</b></span>
-      <span>In progress <b>{count('doing')}</b></span>
-      <span>Done <b>{count('done')}</b></span>
-      {count('canceled') > 0 && <span>Canceled <b>{count('canceled')}</b></span>}
-      {over > 0 && <span className="over">Overdue <b>{over}</b></span>}
-      <span className="meter" title={pct + '% done'} aria-label={pct + '% done'} role="img"><i style={{ width: pct + '%' }} /></span>
-    </div>
+    <section className="stats" aria-label="This week">
+      {cards.map(c => (
+        <div key={c.key} className={'stat stat-' + c.key + (c.key === 'over' && c.value > 0 ? ' is-alert' : '')}>
+          <span className="stat-icon"><c.Icon /></span>
+          <b className="stat-value">{c.value}</b>
+          <span className="stat-label">{c.key === 'done' ? 'Done · ' + c.label : c.label}</span>
+          {c.meter !== undefined && <span className="meter" role="img" aria-label={c.meter + '% done'}><i style={{ width: c.meter + '%' }} /></span>}
+        </div>
+      ))}
+    </section>
   );
 }

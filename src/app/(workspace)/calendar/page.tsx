@@ -8,8 +8,10 @@ export const metadata = { title: 'Calendar · Personal Schedule' };
 export default function CalendarPage() {
   return (
     <>
-      <PeriodNav unit="month" />
-      <div className="bar"><Filters scope="month" /></div>
+      <div className="toolbar">
+        <PeriodNav unit="month" />
+        <Filters scope="month" />
+      </div>
       <MonthOverview />
     </>
   );

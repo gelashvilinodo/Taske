@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import WorkspaceProvider from '@/components/workspace/WorkspaceProvider';
 import AppHeader from '@/components/shell/AppHeader';
-import PageTabs from '@/components/shell/PageTabs';
+import Sidebar from '@/components/shell/Sidebar';
 import Toast from '@/components/shell/Toast';
 import TaskEditor from '@/components/tasks/TaskEditor';
 import MoveTray from '@/components/tasks/MoveTray';
@@ -13,10 +13,12 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   if (supabaseEnabled && !(await isSignedIn())) redirect('/login');
   return (
     <WorkspaceProvider>
-      <div className="app">
-        <AppHeader />
-        <PageTabs />
-        {children}
+      <div className="shell">
+        <Sidebar />
+        <div className="window">
+          <AppHeader />
+          <div className="app">{children}</div>
+        </div>
       </div>
       <TaskEditor />
       <MoveTray />
