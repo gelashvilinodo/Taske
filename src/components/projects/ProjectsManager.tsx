@@ -9,10 +9,18 @@ import ProjectDialog from './ProjectDialog';
 
 /** Projects page: a tile per project plus a tile to add one. Click a tile to edit it. */
 export default function ProjectsManager() {
-  const { projects, tasks, loaded, readOnly } = useWorkspace();
+  const { projects, projectsReady, tasks, loaded, readOnly } = useWorkspace();
   // null = creating, Project = editing, undefined = dialog closed
   const [editing, setEditing] = useState<Project | null | undefined>(undefined);
 
+  if (!projectsReady) {
+    return (
+      <div className="notice warn" role="alert">
+        Projects can’t be saved yet: the database has no projects table. Run supabase/migrations/20261112000000_projects.sql
+        in the Supabase SQL Editor, then reload this page.
+      </div>
+    );
+  }
   return (
     <>
       <section className="pj-grid" aria-label="Projects">

@@ -28,7 +28,10 @@ function check({ error }: { error: { message: string; code?: string } | null }) 
   if (!error) return;
   const offline = (typeof navigator !== 'undefined' && !navigator.onLine) || /fetch|network/i.test(error.message);
   const err: StoreError = {
-    code: offline ? 'unavailable' : error.code === '42501' ? 'forbidden' : 'unknown',
+    code: offline ? 'unavailable'
+      : error.code === '42501' ? 'forbidden'
+      : error.code === 'PGRST205' || error.code === '42P01' ? 'missing_table'
+      : 'unknown',
     message: error.message,
   };
   throw err;

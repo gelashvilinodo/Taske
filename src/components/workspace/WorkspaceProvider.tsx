@@ -18,6 +18,8 @@ interface Workspace {
   tasks: Task[];
   /** The user's projects, oldest first */
   projects: Project[];
+  /** False when the database has no projects table yet, so projects cannot be saved */
+  projectsReady: boolean;
   /** Project by id; undefined for '' or a project that was deleted */
   projectById: (id: string) => Project | undefined;
   comments: Record<string, Comment[]>;
@@ -67,6 +69,7 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
   const [account, setAccount] = useState<Account>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [projectsReady, setProjectsReady] = useState(true);
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [loaded, setLoaded] = useState(false);
   const [conn, setConn] = useState<Conn>('loading');
@@ -104,7 +107,14 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
   }, [store]);
 
   const loadProjects = useCallback(async () => {
-    const raw = await store.loadProjects();
+    let raw;
+    try { raw = await store.loadProjects(); }
+    catch (e) {
+      // Without the table nothing was saved: drop optimistic projects so the screen tells the truth.
+      if ((e as StoreError)?.code === 'missing_table') { setProjectsReady(false); setProjects([]); }
+      throw e;
+    }
+    setProjectsReady(true);
     setProjects(raw.map(r => cleanProject(r.id, r)).filter(p => p.name).sort((a, b) => a.createdAt - b.createdAt));
   }, [store]);
 
@@ -156,6 +166,7 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
       .catch((e: StoreError) => {
         if (e?.code === 'forbidden') { setReadOnly(true); toast('You can view this page but not change it.'); }
         else if (e?.code === 'quota_exceeded') toast('Storage is full. Delete old tasks and try again.');
+        else if (e?.code === 'missing_table') toast('Projects are not set up in the database yet, so this was not saved.');
         else toast('Could not save. Check your connection and try again.');
       })
       .finally(() => { pending.current--; scheduleReload(table); });
@@ -224,7 +235,7 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
   const names = useMemo(() => (account ? { [account.id]: account.name } : {}), [account]);
 
   const value: Workspace = {
-    mode: store.kind, account, tasks, projects, projectById, comments, names, loaded, conn, readOnly,
+    mode: store.kind, account, tasks, projects, projectsReady, projectById, comments, names, loaded, conn, readOnly,
     weekStart, setWeekStart, month, setMonth, filter, setFilter,
     addTasks, patchTask, removeTask, addComment, removeComment, addProject, updateProject, removeProject, signOut,
     toast, toastMsg, editingId, openEditor: setEditingId, dragId, setDragId,

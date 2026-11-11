@@ -12,7 +12,7 @@ import ProjectDialog from './ProjectDialog';
  * with a "+" button beside it. The "+" opens the New project dialog; the new project is picked straight away.
  */
 export default function ProjectSelect({ value, onChange, className = '' }: { value: string; onChange: (id: string) => void; className?: string }) {
-  const { projects, readOnly } = useWorkspace();
+  const { projects, projectsReady, readOnly } = useWorkspace();
   const uid = useId();
   const labelId = uid + 'l', listId = uid + 'list';
   const [open, setOpen] = useState(false);
@@ -100,7 +100,7 @@ export default function ProjectSelect({ value, onChange, className = '' }: { val
             </ul>
           )}
         </div>
-        {!readOnly && (
+        {!readOnly && projectsReady && (
           <button className="add-btn" type="button" aria-label="New project" title="New project" onClick={() => setCreating(true)}>
             <IconPlus />
           </button>
