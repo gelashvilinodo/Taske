@@ -403,6 +403,8 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
 
 /* ---------- Board ---------- */
 .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--space-3); align-items: stretch; }
+/* Day dots: phone-only pager above the swipeable days */
+.week-dots { display: none; }
 /* Weekend columns are a touch quieter so the working days lead */
 .column.is-weekend:not(.is-today) { background: color-mix(in srgb, var(--panel-bg) 60%, transparent); border-style: dashed; }
 .column.is-weekend .col-name { color: var(--color-muted); }
@@ -940,6 +942,14 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   }
   .rail-label { display: block; font-size: 10px; font-weight: var(--weight-medium); line-height: 1; }
   .rail-blob { border-radius: var(--radius-md); }
+  /* Finger drag along the bar: the blob follows the finger, lifts a little, labels follow it */
+  .rail-items { touch-action: none; -webkit-user-select: none; user-select: none; }
+  .rail-blob.is-dragging { transition: none; }
+  .rail-blob.is-dragging .rail-blob-core { animation: none; transform: scale(1.07); box-shadow: var(--shadow-glow), 0 10px 26px -8px var(--color-accent); transition: transform var(--dur) var(--ease); }
+  .rail-items.is-dragging .rail-item { color: var(--color-muted); }
+  .rail-items.is-dragging .rail-item.is-under { color: var(--color-on-accent); }
+  .rail-items.is-dragging .rail-item.is-under svg { transform: translateY(-1px) scale(1.08); }
+  .rail-item svg { transition: transform var(--dur-fast) var(--ease); }
   .rail-extra, .rail-foot { display: none; }
   .rail-more { display: flex; }
   .rail-more svg { transition: transform var(--dur-slow) var(--ease-spring); }
@@ -1012,16 +1022,68 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   .stat { padding: var(--space-3); column-gap: var(--space-2-5); border-radius: var(--radius-lg); }
   .stat-icon { width: 36px; height: 36px; }
 
+  /* One day per screen; swipe sideways between days. The dots show where you are. */
   .week {
-    grid-auto-flow: row;
-    grid-auto-columns: auto;
-    grid-template-columns: minmax(0, 1fr);
-    overflow: visible;
-    scroll-snap-type: none;
-    margin-inline: 0;
-    padding-inline: 0;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 100%;
+    gap: var(--space-3);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    margin-inline: calc(-1 * var(--window-pad));
+    padding-inline: var(--window-pad);
+    scroll-padding-inline: var(--window-pad);
+    padding-bottom: var(--space-1);
   }
-  .column { min-height: 0; }
+  .week::-webkit-scrollbar { display: none; }
+  .week .column {
+    scroll-snap-align: start; scroll-snap-stop: always;
+    min-height: min(62dvh, 520px);
+    padding: var(--space-4);
+    border-radius: var(--radius-2xl);
+  }
+  .week .col-head { padding: 0 0 var(--space-2); margin-bottom: var(--space-1); border-bottom: var(--border-width) solid var(--color-line); }
+  .week .col-name { font: var(--weight-bold) var(--text-xl) / var(--leading-tight) var(--font-display); }
+  .week .col-date { font-size: var(--text-xs); margin-top: 2px; display: block; }
+  .week .col-add {
+    width: var(--control-md); height: var(--control-md);
+    background: var(--color-accent-soft); color: var(--color-accent-ink);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 30%, transparent);
+  }
+  .week .list { gap: var(--space-2-5); }
+  .week .card { padding: var(--space-3) var(--space-3-5) var(--space-3) var(--space-4); }
+  .week .card-title { font-size: var(--text-md); }
+  .week .empty { padding: var(--space-8) 0; text-align: center; font-size: var(--text-sm); }
+
+  .week-dots {
+    display: flex; justify-content: center; align-items: center; gap: var(--space-1-5);
+    margin-bottom: calc(-1 * var(--space-1));
+  }
+  .week-dot {
+    position: relative;
+    display: inline-grid; place-items: center;
+    width: 10px; height: 10px; padding: 0;
+    border: 0; border-radius: var(--radius-pill);
+    background: var(--color-line-strong);
+    overflow: hidden;
+    transition: width var(--dur-slow) var(--ease-spring), height var(--dur-slow) var(--ease-spring), background-color var(--dur) var(--ease);
+  }
+  .week-dot::before { content: ""; position: absolute; inset: -10px -4px; } /* bigger tap area */
+  .week-dot.has-tasks { background: color-mix(in srgb, var(--color-accent) 55%, var(--color-line-strong)); }
+  .week-dot.is-today:not(.is-active) { box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 3.5px var(--color-accent); }
+  .week-dot.is-active {
+    width: 64px; height: 24px;
+    background: var(--gradient-accent);
+    box-shadow: var(--shadow-glow);
+  }
+  .week-dot-label {
+    font: var(--weight-semibold) var(--text-2xs) / 1 var(--font-ui); color: var(--color-on-accent); white-space: nowrap;
+    opacity: 0; transform: scale(.7);
+    transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .week-dot.is-active .week-dot-label { opacity: 1; transform: none; transition-delay: 80ms; }
   .status-board { grid-template-columns: minmax(0, 1fr); }
 
   #toast { bottom: calc(var(--tabbar-h) + var(--space-4) + env(safe-area-inset-bottom, 0px)); }

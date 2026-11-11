@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { DAYS, iso, shortDate, today, weekDays } from '@/lib/dates';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { DAYS, DAYS_S, iso, shortDate, today, weekDays } from '@/lib/dates';
 import { compareTasks } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { useVisibleTasks } from '@/components/tasks/Filters';
@@ -16,18 +16,54 @@ export default function WeekBoard() {
   const td = iso(today());
   const board = useRef<HTMLElement>(null);
 
-  // When the week scrolls sideways (smaller screens), bring today's column into view.
+  const days = weekDays(weekStart);
+  const [shown, setShown] = useState(0); // day in view when the week scrolls sideways (phones: one day at a time)
+
+  const leftOf = (el: HTMLElement, col: HTMLElement) => col.offsetLeft - el.offsetLeft - parseFloat(getComputedStyle(el).paddingLeft || '0');
+  const goTo = useCallback((i: number, smooth = true) => {
+    const el = board.current;
+    const col = el?.children[i] as HTMLElement | undefined;
+    if (el && col) el.scrollTo({ left: leftOf(el, col), behavior: smooth ? 'smooth' : 'auto' });
+  }, []);
+
+  // When the week scrolls sideways (smaller screens), open on today, or on Monday for other weeks.
   const weekKey = iso(weekStart);
   useEffect(() => {
     const el = board.current;
-    if (!el || el.scrollWidth <= el.clientWidth + 1) return;
-    const col = el.querySelector<HTMLElement>('.is-today');
-    el.scrollTo({ left: col ? col.offsetLeft - el.offsetLeft - parseFloat(getComputedStyle(el).paddingLeft || '0') : 0 });
+    if (!el || el.scrollWidth <= el.clientWidth + 1) { setShown(0); return; }
+    const i = days.findIndex(d => iso(d) === td);
+    goTo(Math.max(0, i), false);
+    setShown(Math.max(0, i));
   }, [weekKey]);
 
+  const onScroll = () => {
+    const el = board.current;
+    if (!el) return;
+    let best = 0, dist = Infinity;
+    [...el.children].forEach((c, i) => {
+      const d = Math.abs(leftOf(el, c as HTMLElement) - el.scrollLeft);
+      if (d < dist) { dist = d; best = i; }
+    });
+    if (best !== shown) setShown(best);
+  };
+
   return (
-    <main className="week" ref={board}>
-      {weekDays(weekStart).map((d, i) => {
+    <>
+    <nav className="week-dots" aria-label="Days">
+      {days.map((d, i) => {
+        const ds = iso(d);
+        const n = all.filter(t => t.day === ds).length;
+        return (
+          <button key={ds} type="button" onClick={() => goTo(i)} aria-current={i === shown ? 'true' : undefined}
+            aria-label={DAYS[i] + ', ' + shortDate(d) + (n ? ', ' + n + (n === 1 ? ' task' : ' tasks') : '')}
+            className={'week-dot' + (i === shown ? ' is-active' : '') + (ds === td ? ' is-today' : '') + (n ? ' has-tasks' : '')}>
+            <span className="week-dot-label">{DAYS_S[i]} {d.getDate()}</span>
+          </button>
+        );
+      })}
+    </nav>
+    <main className="week" ref={board} onScroll={onScroll}>
+      {days.map((d, i) => {
         const ds = iso(d);
         const tasks = all.filter(t => t.day === ds).sort(compareTasks);
         return (
@@ -48,5 +84,6 @@ export default function WeekBoard() {
         );
       })}
     </main>
+    </>
   );
 }
