@@ -9,5 +9,11 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Public Supabase settings for server code at runtime (the browser bundle gets them from .env.local at build).
+  // Both are safe to publish; row level security protects the data. Never put the secret/service_role key here.
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://yvnpeiccqvlupvylxubo.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_eMzxA286Q4KRbl6G85Yj1Q_oU-_9XAP"
+  }
 }

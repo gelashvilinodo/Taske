@@ -65,7 +65,7 @@ export default function LoginForm({ initialError }: { initialError: string }) {
 
   async function resend() {
     setBusy('resend');
-    try { await sendCode(email); setMsg({ text: 'A new code is on its way.', ok: true }); }
+    try { await sendCode(email); setMsg({ text: 'A new email is on its way.', ok: true }); }
     catch (err) { setMsg({ text: friendly((err as Error).message) }); }
     setBusy(null);
   }
@@ -96,19 +96,19 @@ export default function LoginForm({ initialError }: { initialError: string }) {
             <input className="input" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com"
               value={email} onChange={e => setEmail(e.target.value)} required />
           </label>
-          <button className="primary" type="submit" disabled={!!busy}>{busy === 'email' ? 'Sending…' : 'Send code'}</button>
+          <button className="primary" type="submit" disabled={!!busy}>{busy === 'email' ? 'Sending…' : 'Continue with email'}</button>
         </form>
       ) : (
         <form className={styles.form} onSubmit={onCode} noValidate>
-          <p className={styles.sent}>We sent a code to {email}. Enter it below.</p>
-          <label className="field"><span>Code from the email</span>
+          <p className={styles.sent}>We sent an email to <b>{email}</b>. Open the sign-in link in it on this device, or type the code if the email has one.</p>
+          <label className="field"><span>Code from the email (if there is one)</span>
             <input className={`input ${styles.code}`} type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={10}
               value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} autoFocus required />
           </label>
           <button className="primary" type="submit" disabled={!!busy}>{busy === 'code' ? 'Signing in…' : 'Sign in'}</button>
           <div className={styles.row}>
             <button className={styles.link} type="button" onClick={() => { setMsg({ text: '' }); setStep('email'); }}>Use a different email</button>
-            <button className={styles.link} type="button" disabled={!!busy} onClick={resend}>Send a new code</button>
+            <button className={styles.link} type="button" disabled={!!busy} onClick={resend}>Send again</button>
           </div>
         </form>
       )}
