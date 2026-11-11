@@ -1,55 +1,229 @@
-/* Colour, type and theme tokens. Day/Night override the system theme via html[data-mode]. */
+/* ==========================================================================
+   Taske design tokens
+   --------------------------------------------------------------------------
+   The single source of truth for colour, size, type, radius, glass, shadow,
+   motion and layering. Imported once in src/app/layout.tsx; app.css and every
+   *.module.css build only from these variables, so all pages share one look.
+
+   Themes: colours are written once with light-dark(day, night). The theme is
+   picked by `color-scheme`:
+     - default            follows the device setting
+     - data-theme="…"     set by the host (claude.ai)
+     - data-mode="…"      the Day / Night switch in the app (wins over both)
+   ========================================================================== */
+
+/* -------- Breakpoints (CSS variables cannot be used inside @media, so these
+   are the agreed values; use exactly these numbers in every media query) ----
+   xs   0    – 479   phones
+   sm   480  – 767   large phones, phones in landscape
+   md   768  – 1023  tablets
+   lg   1024 – 1439  laptops
+   xl   1440 – 1919  desktops
+   2xl  1920 +       large and 4K screens
+   ------------------------------------------------------------------------- */
+
 :root {
-  --bg: #eff2f6; --surface: #ffffff; --sunk: #e3e8ef; --ink: #172130; --muted: #566478; --line: #d3dae4;
-  --accent: #2343c4; --on-accent: #ffffff; --accent-tint: #dfe6fb; --accent-ink: #1d379f; --today: #e4eafa;
-  --ok-bg: #dbefdf; --ok-fg: #1c6531; --warn-bg: #fbefca; --warn-fg: #6f5200; --bad-bg: #fbe0de; --bad-fg: #9c261f;
-  --skrib-bg: #e9e4fb; --skrib-fg: #4a2fa8; --sitbox-bg: #fde6d3; --sitbox-fg: #8f420e;
-  --modx-bg: #d6f0ea; --modx-fg: #0e5f50; --excity-bg: #dce9fb; --excity-fg: #1c5499; --other-bg: #e6e9ee; --other-fg: #4a5666;
-  --shadow: 0 1px 2px rgba(23, 33, 48, .08);
-  --n-skrib: #8b3dff; --n-sitbox: #ff6a00; --n-modx: #00b383; --n-excity: #0098e0; --n-other: #e0389b; --glow-pct: 32%;
-  --font-ui: var(--font-noto-sans), "Noto Sans Georgian", system-ui, sans-serif;
-  --font-display: var(--font-noto-serif), "Noto Serif Georgian", serif;
-  --font-data: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+  --bp-sm: 480px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1440px;
+  --bp-2xl: 1920px;
+
+  /* ---------- Palette primitives ---------- */
+  /* Jet black (გიშერისფერი შავი): deep, very slightly cool black */
+  --jet-950: #060609;
+  --jet-900: #0a0a0e;
+  --jet-850: #101016;
+  --jet-800: #16151e;
+  --jet-700: #201e2b;
+  --jet-600: #2c2a3a;
+  --jet-500: #3b3850;
+
+  /* Dark vivid purple (მუქი მყვირალა იისფერი) */
+  --purple-200: #dccbff;
+  --purple-300: #c2a5ff;
+  --purple-400: #a374ff;
+  --purple-500: #8a4dfa;
+  --purple-600: #6f24ea;
+  --purple-700: #5814c7;
+  --purple-800: #400e96;
+  --purple-900: #270861;
+
+  /* Pearl white (მარგალიტისფერი თეთრი): warm white with a faint lilac sheen */
+  --pearl-50: #fcfbf8;
+  --pearl-100: #f5f2ed;
+  --pearl-200: #ebe6de;
+  --pearl-300: #dad4cb;
+  --pearl-400: #b6b0a8;
+  --pearl-500: #8f8a84;
+
+  /* ---------- Semantic colours (day, night) ---------- */
+  --color-bg: light-dark(var(--pearl-100), var(--jet-900));
+  --color-ink: light-dark(var(--jet-900), var(--pearl-100));
+  --color-muted: light-dark(#5d5868, #aaa5b6);
+  --color-faint: light-dark(#8a8594, #77738a);
+  --color-line: light-dark(rgb(40 22 80 / .12), rgb(255 255 255 / .09));
+  --color-line-strong: light-dark(rgb(40 22 80 / .22), rgb(255 255 255 / .18));
+
+  --color-accent: light-dark(var(--purple-600), var(--purple-500));
+  --color-accent-strong: light-dark(var(--purple-700), var(--purple-600));
+  --color-accent-ink: light-dark(var(--purple-700), var(--purple-300));
+  --color-accent-soft: light-dark(rgb(111 36 234 / .10), rgb(138 77 250 / .18));
+  --color-on-accent: var(--pearl-50);
+  --gradient-accent: linear-gradient(135deg, var(--purple-500) 0%, var(--purple-700) 100%);
+
+  --color-sunk: light-dark(rgb(40 22 80 / .06), rgb(255 255 255 / .045));
+  --color-field: light-dark(rgb(255 255 255 / .65), rgb(0 0 0 / .28));
+  --color-card: light-dark(rgb(255 255 255 / .72), rgb(38 35 54 / .60));
+  --color-card-hover: light-dark(rgb(255 255 255 / .9), rgb(48 44 68 / .72));
+  --color-inverse-bg: light-dark(var(--jet-800), var(--pearl-100));
+  --color-inverse-ink: light-dark(var(--pearl-100), var(--jet-900));
+  --color-scrim: light-dark(rgb(20 12 40 / .35), rgb(0 0 0 / .6));
+
+  /* Status */
+  --color-ok: light-dark(#1b7a45, #5ed39a);
+  --color-warn: light-dark(#855b00, #f2c55c);
+  --color-bad: light-dark(#b02734, #ff7a85);
+
+  /* Projects: kept distinct, softened to sit with the palette */
+  --pj-skrib: light-dark(#6a3fc0, #b794f6);
+  --pj-sitbox: light-dark(#a4500f, #f0a05a);
+  --pj-modx: light-dark(#0e6e57, #4fd1a8);
+  --pj-excity: light-dark(#1a5e99, #5fb8f0);
+  --pj-other: light-dark(#a3306c, #f07ab8);
+
+  /* Page backdrop: soft purple light behind the glass */
+  --backdrop:
+    radial-gradient(60vmax 50vmax at 8% -10%, light-dark(rgb(163 116 255 / .30), rgb(111 36 234 / .38)), transparent 70%),
+    radial-gradient(55vmax 45vmax at 105% 20%, light-dark(rgb(220 203 255 / .55), rgb(64 14 150 / .45)), transparent 70%),
+    radial-gradient(50vmax 40vmax at 40% 115%, light-dark(rgb(255 255 255 / .9), rgb(88 20 199 / .22)), transparent 70%),
+    light-dark(var(--pearl-100), var(--jet-900));
+
+  /* ---------- Glass ---------- */
+  --glass-blur: 18px;
+  --glass-saturate: 160%;
+  --glass-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  --glass-bg: light-dark(rgb(255 255 255 / .52), rgb(26 24 38 / .50));
+  --glass-bg-soft: light-dark(rgb(255 255 255 / .34), rgb(255 255 255 / .035));
+  --glass-bg-strong: light-dark(rgb(252 251 248 / .86), rgb(22 21 32 / .86));
+  --glass-border: light-dark(rgb(255 255 255 / .75), rgb(255 255 255 / .09));
+  --glass-highlight: inset 0 1px 0 light-dark(rgb(255 255 255 / .9), rgb(255 255 255 / .07));
+
+  /* ---------- Shadows (purple tinted) ---------- */
+  --shadow-sm: 0 1px 2px light-dark(rgb(40 22 80 / .08), rgb(0 0 0 / .35));
+  --shadow-md: 0 6px 20px -6px light-dark(rgb(40 22 80 / .18), rgb(0 0 0 / .55));
+  --shadow-lg: 0 18px 50px -12px light-dark(rgb(40 22 80 / .28), rgb(0 0 0 / .7));
+  --shadow-glow: 0 8px 24px -8px light-dark(rgb(111 36 234 / .45), rgb(138 77 250 / .6));
+
+  /* ---------- Spacing (4px grid) ---------- */
+  --space-0: 0;
+  --space-px: 1px;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---------- Typography ---------- */
+  --font-ui: var(--font-noto-sans), "Noto Sans Georgian", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-noto-sans), "Noto Sans Georgian", system-ui, sans-serif;
+  --font-data: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Fluid sizes: smallest value at 360px wide, largest at ~1920px wide */
+  --text-2xs: clamp(10px, 9.6px + .10vw, 11.5px);
+  --text-xs: clamp(11px, 10.5px + .12vw, 12.5px);
+  --text-sm: clamp(12px, 11.4px + .15vw, 13.5px);
+  --text-md: clamp(13.5px, 12.8px + .18vw, 15.5px);
+  --text-lg: clamp(15px, 14px + .30vw, 18px);
+  --text-xl: clamp(18px, 16px + .60vw, 24px);
+  --text-2xl: clamp(22px, 18px + 1.1vw, 32px);
+  --text-input-touch: 16px; /* stops iOS from zooming into fields */
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.3;
+  --leading-normal: 1.45;
+  --tracking-wide: .04em;
+
+  /* ---------- Radius ---------- */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+
+  /* ---------- Controls ---------- */
+  --control-xs: 22px;   /* chips, inline toggles */
+  --control-sm: 30px;   /* compact buttons */
+  --control-md: 36px;   /* inputs, primary buttons */
+  --control-lg: 44px;   /* touch targets, tray */
+  --border-width: 1px;
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-accent);
+
+  /* ---------- Layout ---------- */
+  --page-max: 1600px;
+  --gutter: clamp(16px, 2.4vw, 40px);
+  --section-gap: var(--space-4);
+  --column-min-h: 160px;
+  --dialog-w: 520px;
+
+  /* ---------- Motion ---------- */
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+
+  /* ---------- Layers ---------- */
+  --z-base: 0;
+  --z-toast: 20;
+  --z-tray: 25;
+  --z-menu: 30;
+
+  color-scheme: light dark;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #11161f; --surface: #1a212d; --sunk: #232b39; --ink: #e8edf5; --muted: #9aa7b9; --line: #2e3748;
-    --accent: #8ea6ff; --on-accent: #101626; --accent-tint: #27325a; --accent-ink: #c3d0ff; --today: #1c2640;
-    --ok-bg: #1b3d27; --ok-fg: #93dca8; --warn-bg: #40340f; --warn-fg: #efd27a; --bad-bg: #4a2220; --bad-fg: #f6a9a3;
-    --skrib-bg: #32285a; --skrib-fg: #cdbfff; --sitbox-bg: #4a2f1a; --sitbox-fg: #f7be91;
-    --modx-bg: #16403a; --modx-fg: #8fe0cf; --excity-bg: #1e3553; --excity-fg: #a8ccf7; --other-bg: #2c3442; --other-fg: #b9c4d3;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .4);
-    --n-skrib: #b46cff; --n-sitbox: #ff8a2a; --n-modx: #19f5b5; --n-excity: #2fd3ff; --n-other: #ff4fc3; --glow-pct: 55%;
-    color-scheme: dark;
+
+/* Theme selection: host theme, then the app's own Day / Night switch */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-mode="day"] { color-scheme: light; }
+:root[data-mode="night"] { color-scheme: dark; }
+
+/* Touch screens get larger targets */
+@media (pointer: coarse) {
+  :root {
+    --control-xs: 30px;
+    --control-sm: 38px;
+    --control-md: 44px;
   }
 }
-:root[data-theme="dark"] {
-  --bg: #11161f; --surface: #1a212d; --sunk: #232b39; --ink: #e8edf5; --muted: #9aa7b9; --line: #2e3748;
-  --accent: #8ea6ff; --on-accent: #101626; --accent-tint: #27325a; --accent-ink: #c3d0ff; --today: #1c2640;
-  --ok-bg: #1b3d27; --ok-fg: #93dca8; --warn-bg: #40340f; --warn-fg: #efd27a; --bad-bg: #4a2220; --bad-fg: #f6a9a3;
-  --skrib-bg: #32285a; --skrib-fg: #cdbfff; --sitbox-bg: #4a2f1a; --sitbox-fg: #f7be91;
-  --modx-bg: #16403a; --modx-fg: #8fe0cf; --excity-bg: #1e3553; --excity-fg: #a8ccf7; --other-bg: #2c3442; --other-fg: #b9c4d3;
-  --shadow: 0 1px 2px rgba(0, 0, 0, .4);
-  --n-skrib: #b46cff; --n-sitbox: #ff8a2a; --n-modx: #19f5b5; --n-excity: #2fd3ff; --n-other: #ff4fc3; --glow-pct: 55%;
-  color-scheme: dark;
+
+/* Very large screens get a wider page */
+@media (min-width: 1920px) {
+  :root {
+    --page-max: 1880px;
+    --column-min-h: 220px;
+  }
 }
-html:root[data-mode="day"] {
-  --bg: #eff2f6; --surface: #ffffff; --sunk: #e3e8ef; --ink: #172130; --muted: #566478; --line: #d3dae4;
-  --accent: #2343c4; --on-accent: #ffffff; --accent-tint: #dfe6fb; --accent-ink: #1d379f; --today: #e4eafa;
-  --ok-bg: #dbefdf; --ok-fg: #1c6531; --warn-bg: #fbefca; --warn-fg: #6f5200; --bad-bg: #fbe0de; --bad-fg: #9c261f;
-  --skrib-bg: #e9e4fb; --skrib-fg: #4a2fa8; --sitbox-bg: #fde6d3; --sitbox-fg: #8f420e;
-  --modx-bg: #d6f0ea; --modx-fg: #0e5f50; --excity-bg: #dce9fb; --excity-fg: #1c5499; --other-bg: #e6e9ee; --other-fg: #4a5666;
-  --shadow: 0 1px 2px rgba(23, 33, 48, .08);
-  --n-skrib: #8b3dff; --n-sitbox: #ff6a00; --n-modx: #00b383; --n-excity: #0098e0; --n-other: #e0389b; --glow-pct: 32%;
-  color-scheme: light;
-}
-html:root[data-mode="night"] {
-  --bg: #11161f; --surface: #1a212d; --sunk: #232b39; --ink: #e8edf5; --muted: #9aa7b9; --line: #2e3748;
-  --accent: #8ea6ff; --on-accent: #101626; --accent-tint: #27325a; --accent-ink: #c3d0ff; --today: #1c2640;
-  --ok-bg: #1b3d27; --ok-fg: #93dca8; --warn-bg: #40340f; --warn-fg: #efd27a; --bad-bg: #4a2220; --bad-fg: #f6a9a3;
-  --skrib-bg: #32285a; --skrib-fg: #cdbfff; --sitbox-bg: #4a2f1a; --sitbox-fg: #f7be91;
-  --modx-bg: #16403a; --modx-fg: #8fe0cf; --excity-bg: #1e3553; --excity-fg: #a8ccf7; --other-bg: #2c3442; --other-fg: #b9c4d3;
-  --shadow: 0 1px 2px rgba(0, 0, 0, .4);
-  --n-skrib: #b46cff; --n-sitbox: #ff8a2a; --n-modx: #19f5b5; --n-excity: #2fd3ff; --n-other: #ff4fc3; --glow-pct: 55%;
-  color-scheme: dark;
+
+/* People who ask for less transparency get solid surfaces */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-bg: light-dark(var(--pearl-50), var(--jet-800));
+    --glass-bg-soft: light-dark(var(--pearl-200), var(--jet-850));
+    --glass-bg-strong: light-dark(var(--pearl-50), var(--jet-800));
+    --glass-filter: none;
+  }
 }
