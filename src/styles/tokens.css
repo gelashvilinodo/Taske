@@ -187,6 +187,7 @@
   --shell-gap: clamp(10px, 1.2vw, 18px);  /* space between rail and window */
   --rail-w: 68px;
   --window-pad: clamp(16px, 2.2vw, 32px);
+  --safe-top: env(safe-area-inset-top, 0px); /* status bar height in the iPhone home-screen app */
   --tabbar-h: 64px;                       /* phone bottom tab bar */
   --drag-edge-w: clamp(48px, 4vw, 72px);  /* week-switch strip at each screen edge while dragging */
 
@@ -201,6 +202,7 @@
   /* ---------- Layers ---------- */
   --z-base: 0;
   --z-rail: 15;
+  --z-statusbar: 28;  /* above the page, below menus and dialogs */
   --z-toast: 20;
   --z-tray: 25;
   --z-menu: 30;
