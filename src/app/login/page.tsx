@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { supabaseEnabled } from '@/lib/supabase/config';
 import { isSignedIn } from '@/lib/supabase/server';
@@ -17,6 +18,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <h1 className={styles.title} id="loginTitle">Personal Schedule</h1>
         <p className={styles.sub}>Sign in to keep your tasks saved and in sync on every device.</p>
         <LoginForm initialError={error ? 'Sign-in did not finish: ' + error : ''} />
+        <p className={styles.legal}>By continuing you agree to our <Link href="/privacy">Privacy Policy</Link>.</p>
       </section>
     </main>
   );
