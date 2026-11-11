@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { DAYS_S, parse, shortDate, weekday } from '@/lib/dates';
-import { closed, compareTasks, prioName, projectName, statusName, type Task } from '@/lib/tasks/model';
+import { closed, compareTasks, prioName, statusName, type Project, type Task } from '@/lib/tasks/model';
+import { ProjectChip } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { useVisibleTasks } from '@/components/tasks/Filters';
 
@@ -14,22 +15,22 @@ const COLS: { id: Col; label: string }[] = [
 const prioOrder: Record<string, number> = { urgent: 0, high: 1, low: 2, '': 3 };
 const statusOrder: Record<string, number> = { doing: 0, todo: 1, done: 2, canceled: 3 };
 
-function sortValue(t: Task, c: Col): string | number {
+function sortValue(t: Task, c: Col, project: (id: string) => Project | undefined): string | number {
   if (c === 'priority') return prioOrder[t.priority];
   if (c === 'status') return statusOrder[t.status];
   if (c === 'deadline') return t.deadline || '9999';
-  if (c === 'project') return projectName(t.project);
+  if (c === 'project') return project(t.project)?.name.toLowerCase() ?? '\uffff';
   return t[c].toLowerCase();
 }
 const dayLabel = (s: string) => { const d = parse(s); return DAYS_S[weekday(d)] + ', ' + shortDate(d) + ' ' + d.getFullYear(); };
 
 /** Table page: every task in one sortable list. */
 export default function TaskTable() {
-  const { loaded, readOnly, openEditor } = useWorkspace();
+  const { loaded, readOnly, openEditor, projectById } = useWorkspace();
   const tasks = useVisibleTasks();
   const [sort, setSort] = useState<{ col: Col; dir: 1 | -1 }>({ col: 'day', dir: -1 });
   const rows = [...tasks].sort((a, b) => {
-    const x = sortValue(a, sort.col), y = sortValue(b, sort.col);
+    const x = sortValue(a, sort.col, projectById), y = sortValue(b, sort.col, projectById);
     return (x < y ? -1 : x > y ? 1 : 0) * sort.dir || compareTasks(a, b);
   });
   const toggle = (col: Col) => setSort(s => ({ col, dir: s.col === col ? (s.dir === 1 ? -1 : 1) : 1 }));
@@ -57,7 +58,7 @@ export default function TaskTable() {
                   {readOnly ? <span className="card-title">{t.title}</span>
                     : <button className="card-title" type="button" onClick={() => openEditor(t.id)}>{t.title}</button>}
                 </td>
-                <td><span className={'chip p-' + t.project}>{projectName(t.project)}</span></td>
+                <td><ProjectChip project={projectById(t.project)} /></td>
                 <td><span className={'status s-' + t.status}>{statusName(t.status)}</span></td>
                 <td>{t.priority ? <span className={'prio pr-' + t.priority}>{prioName(t.priority)}</span> : <span className="chip">—</span>}</td>
                 <td className="num">{dayLabel(t.day)}</td>

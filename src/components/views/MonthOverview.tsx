@@ -2,13 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { addDays, iso, isoWeek, MONTHS, monthWeeks, planningMonday, rangeLabel } from '@/lib/dates';
-import { inWeek, PROJECTS } from '@/lib/tasks/model';
+import { inWeek } from '@/lib/tasks/model';
+import { ProjectChip } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { useVisibleTasks } from '@/components/tasks/Filters';
 
 /** Calendar page (for now): the month as a list of weeks with progress. Click a week to open it on the board. */
 export default function MonthOverview() {
-  const { month, setWeekStart } = useWorkspace();
+  const { month, setWeekStart, projects } = useWorkspace();
   const router = useRouter();
   const all = useVisibleTasks();
   const prefix = iso(month).slice(0, 7);
@@ -30,9 +31,9 @@ export default function MonthOverview() {
             <span className="wk-num">Wk {isoWeek(mon)}</span>
             <span className="wk-range">{rangeLabel(mon, addDays(mon, 4), MONTHS)}</span>
             <span className="meta">
-              {PROJECTS.map(p => {
+              {projects.map(p => {
                 const n = tasks.filter(t => t.project === p.id).length;
-                return n ? <span key={p.id} className={'chip p-' + p.id}>{p.name} {n}</span> : null;
+                return n ? <ProjectChip key={p.id} project={p} suffix={n} /> : null;
               })}
             </span>
             <span className="wk-count">{done}/{tasks.length}</span>

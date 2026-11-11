@@ -2,17 +2,17 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { iso, isDate, parse, snapWeekday } from '@/lib/dates';
-import { makeSubs, PRIORITIES, PROJECTS, STATUSES, type PriorityId, type ProjectId, type StatusId, type Subtask } from '@/lib/tasks/model';
+import { makeSubs, PRIORITIES, STATUSES, type PriorityId, type StatusId, type Subtask } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 
 interface Draft {
   title: string; description: string; subtasks: Subtask[]; newSub: string;
-  status: StatusId; priority: PriorityId; project: ProjectId; day: string; deadline: string;
+  status: StatusId; priority: PriorityId; project: string; day: string; deadline: string;
 }
 
 /** Edit dialog for one task. Opens when the workspace's editingId is set. */
 export default function TaskEditor() {
-  const { tasks, editingId, openEditor, patchTask, removeTask, toast } = useWorkspace();
+  const { tasks, projects, editingId, openEditor, patchTask, removeTask, toast } = useWorkspace();
   const dialog = useRef<HTMLDialogElement>(null);
   const newSubInput = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -54,7 +54,7 @@ export default function TaskEditor() {
       subtasks: draft.subtasks.concat(makeSubs(draft.newSub))
         .map(s => ({ id: s.id, title: s.title.trim().slice(0, 300), done: !!s.done }))
         .filter(s => s.title),
-      project: draft.project,
+      project: projects.some(p => p.id === draft.project) ? draft.project : '',
       status: draft.status,
       day: iso(snapped),
       deadline: draft.deadline || '',
@@ -121,8 +121,9 @@ export default function TaskEditor() {
             </div>
           </div>
           <label className="field"><span>Project</span>
-            <select className="input" value={draft.project} onChange={e => set({ project: e.target.value as ProjectId })}>
-              {PROJECTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            <select className="input" value={projects.some(p => p.id === draft.project) ? draft.project : ''} onChange={e => set({ project: e.target.value })}>
+              <option value="">No project</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </label>
           <div className="two">

@@ -85,12 +85,9 @@
   --color-warn: light-dark(#855b00, #f2c55c);
   --color-bad: light-dark(#b02734, #ff7a85);
 
-  /* Projects: kept distinct, softened to sit with the palette */
-  --pj-skrib: light-dark(#6a3fc0, #b794f6);
-  --pj-sitbox: light-dark(#a4500f, #f0a05a);
-  --pj-modx: light-dark(#0e6e57, #4fd1a8);
-  --pj-excity: light-dark(#1a5e99, #5fb8f0);
-  --pj-other: light-dark(#a3306c, #f07ab8);
+  /* Project colours are picked by the user and set inline as --pj / --c.
+     Text on a project tint is mixed toward the ink so it stays readable in both themes. */
+  --pj-ink-mix: 38%;
 
   /* Page backdrop: soft purple light behind the glass */
   --backdrop:

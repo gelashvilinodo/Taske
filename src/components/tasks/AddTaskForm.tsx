@@ -2,7 +2,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { DAYS_S, iso, shortDate, today, weekDays } from '@/lib/dates';
-import { makeSubs, PRIORITIES, PROJECTS, type PriorityId, type ProjectId } from '@/lib/tasks/model';
+import { makeSubs, PRIORITIES, type PriorityId } from '@/lib/tasks/model';
+import Link from 'next/link';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 
 /** Fired by a column's "+" button to open the form on that day. */
@@ -14,13 +15,13 @@ const writePref = (key: string, v: string) => { try { localStorage.setItem(key, 
 
 /** One-line task entry above the board. Pasting several lines adds one task per line. */
 export default function AddTaskForm() {
-  const { weekStart, addTasks, toast } = useWorkspace();
+  const { weekStart, addTasks, toast, projects } = useWorkspace();
   const days = weekDays(weekStart).map(iso);
   const defaultDay = days.includes(iso(today())) ? iso(today()) : days[0];
 
   const [open, setOpen] = useState(false); // phone layout only
   const [title, setTitle] = useState('');
-  const [project, setProject] = useState<ProjectId>('skrib');
+  const [project, setProject] = useState('');
   const [priority, setPriority] = useState<PriorityId>('');
   const [day, setDay] = useState(defaultDay);
   const [deadline, setDeadline] = useState('');
@@ -31,8 +32,8 @@ export default function AddTaskForm() {
 
   useEffect(() => {
     const last = readPref('ps.project');
-    if (PROJECTS.some(p => p.id === last)) setProject(last as ProjectId);
-  }, []);
+    if (last && projects.some(p => p.id === last)) setProject(last);
+  }, [projects]);
 
   // Keep the chosen day inside the week on screen.
   const weekKey = days.join();
@@ -61,7 +62,7 @@ export default function AddTaskForm() {
     const lines = title.split('\n').map(s => s.trim()).filter(Boolean);
     if (!lines.length) { titleRef.current?.focus(); return; }
     const base = {
-      project, day, deadline: deadline || '', priority,
+      project: projects.some(p => p.id === project) ? project : '', day, deadline: deadline || '', priority,
       description: details ? desc.trim().slice(0, 5000) : '',
       status: 'todo' as const,
     };
@@ -84,9 +85,10 @@ export default function AddTaskForm() {
             onChange={e => setTitle(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); } }} />
         </label>
-        <label className="field field-project"><span>Project</span>
-          <select className="input" value={project} onChange={e => { setProject(e.target.value as ProjectId); writePref('ps.project', e.target.value); }}>
-            {PROJECTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        <label className="field field-project"><span>Project{!projects.length && <> · <Link className="field-link" href="/projects">create one</Link></>}</span>
+          <select className="input" value={projects.some(p => p.id === project) ? project : ''} onChange={e => { setProject(e.target.value); writePref('ps.project', e.target.value); }}>
+            <option value="">No project</option>
+            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </label>
         <label className="field"><span>Priority</span>

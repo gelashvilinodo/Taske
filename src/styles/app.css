@@ -424,12 +424,7 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
   box-shadow: inset 3px 0 0 var(--pj), var(--glass-highlight), 0 12px 24px -12px color-mix(in srgb, var(--pj) 60%, transparent);
 }
 .card.dragging { transform: none; }
-.card.pj-skrib { --pj: var(--pj-skrib); }
-.card.pj-sitbox { --pj: var(--pj-sitbox); }
-.card.pj-modx { --pj: var(--pj-modx); }
-.card.pj-excity { --pj: var(--pj-excity); }
-.card.pj-other { --pj: var(--pj-other); }
-.card.is-done, .card.is-canceled { --pj: var(--color-line-strong); }
+
 .card.is-canceled { opacity: .7; }
 .card[draggable="true"] { cursor: grab; }
 .card.dragging { opacity: .45; }
@@ -458,11 +453,30 @@ span.card-title { cursor: default; }
 }
 .chip.is-soon { --c: var(--color-warn); }
 .chip.is-over { --c: var(--color-bad); }
-.p-skrib { --c: var(--pj-skrib); }
-.p-sitbox { --c: var(--pj-sitbox); }
-.p-modx { --c: var(--pj-modx); }
-.p-excity { --c: var(--pj-excity); }
-.p-other { --c: var(--pj-other); }
+.chip-project {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding-left: 2px;
+  color: color-mix(in oklab, var(--c), var(--color-ink) var(--pj-ink-mix));
+}
+
+/* Project logo tile: uploaded image, or the first letter on the project colour */
+.pj-logo {
+  --c: var(--color-accent);
+  flex: none;
+  display: inline-grid; place-items: center; overflow: hidden;
+  width: var(--pj-logo-size); height: var(--pj-logo-size);
+  border-radius: calc(var(--pj-logo-size) * .28);
+  background: linear-gradient(145deg, color-mix(in oklab, var(--c), white 18%), color-mix(in oklab, var(--c), black 22%));
+  color: #fff;
+  font: var(--weight-bold) calc(var(--pj-logo-size) * .5) / 1 var(--font-display);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), 0 6px 16px -8px var(--c);
+}
+.pj-logo.has-img { background: var(--color-card-hover); box-shadow: inset 0 0 0 1px var(--panel-border), 0 6px 16px -8px var(--c); }
+.pj-logo img { width: 100%; height: 100%; object-fit: contain; padding: 8%; }
+.pj-logo-xs { --pj-logo-size: 14px; }
+.pj-logo-xs img { padding: 0; }
+.pj-logo-sm { --pj-logo-size: 28px; }
+.pj-logo-lg { --pj-logo-size: 64px; }
 
 .card-foot { display: flex; gap: var(--space-1); flex-wrap: wrap; align-items: center; }
 .status, .prio, .cmt-btn {
@@ -658,6 +672,61 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 }
 .tray-hint { grid-column: 1 / -1; margin: 0; font-size: var(--text-xs); color: var(--color-muted); }
 
+/* ---------- Projects page ---------- */
+.pj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3); }
+.pj-tile {
+  --c: var(--color-accent);
+  all: unset; box-sizing: border-box; cursor: pointer;
+  display: grid; justify-items: center; align-content: start; gap: var(--space-2);
+  min-height: 210px;
+  padding: var(--space-6) var(--space-4) var(--space-5);
+  text-align: center;
+  background: var(--panel-bg); border: var(--border-width) solid var(--panel-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-highlight);
+}
+.pj-tile:hover { background: var(--panel-bg-hover); transform: translateY(-3px); box-shadow: var(--glass-highlight), 0 16px 30px -16px var(--c); }
+.pj-tile:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.pj-tile:disabled { cursor: default; transform: none; }
+.pj-tile .pj-logo { margin-bottom: var(--space-1); }
+.pj-name { font-weight: var(--weight-semibold); font-size: var(--text-md); overflow-wrap: anywhere; }
+.pj-count { font-size: var(--text-xs); color: var(--color-muted); }
+.pj-meter { width: 70%; height: 4px; margin-top: var(--space-1); }
+.pj-meter i { background: var(--c); }
+.pj-new { border-style: dashed; border-color: var(--color-line-strong); background: transparent; }
+.pj-new-icon {
+  display: grid; place-items: center; width: 64px; height: 64px; margin-bottom: var(--space-1);
+  border-radius: 18px; color: var(--color-accent-ink);
+  background: var(--color-accent-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
+.pj-dlg-head { display: flex; align-items: center; gap: var(--space-3); }
+.swatches { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.swatch {
+  position: relative;
+  width: 30px; height: 30px; padding: 0;
+  border: 0; border-radius: 50%;
+  background: var(--c);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / .12);
+  cursor: pointer;
+}
+.swatch[aria-checked="true"], .swatch-custom.is-on { box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--c); }
+.swatch-custom {
+  display: grid; place-items: center;
+  background: conic-gradient(from 0deg, #ef4f5f, #e8b030, #4fbf6a, #2fa6e0, #8a4dfa, #e0479e, #ef4f5f);
+  color: #fff; font-weight: var(--weight-bold); text-shadow: 0 1px 2px rgb(0 0 0 / .4);
+}
+.swatch-custom.is-on { background: var(--c); }
+.swatch-custom input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+.swatch-custom:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.logo-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.logo-row .ghost { min-height: var(--control-md); padding-inline: var(--space-4); }
+.logo-hint { font-size: var(--text-2xs); color: var(--color-muted); }
+.form-error { margin: 0; font-size: var(--text-sm); color: var(--color-bad); }
+.field-link { color: var(--color-accent-ink); }
+.filter .pj-logo-xs { margin-left: -2px; }
+.filter[aria-pressed="true"] .pj-logo { box-shadow: 0 0 0 1px rgb(255 255 255 / .6); }
+
 /* ---------- Table page ---------- */
 .table-wrap {
   overflow-x: auto;
@@ -825,6 +894,8 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   .tray-days { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-1); }
   .tray-day { font-size: var(--text-2xs); padding: var(--space-1); }
   .stat-label { white-space: normal; }
+  .pj-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+  .pj-tile { min-height: 180px; padding: var(--space-5) var(--space-3) var(--space-4); }
 
   /* Dialog becomes a bottom sheet */
   dialog {
@@ -845,7 +916,7 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 /* ---------- Motion ---------- */
 @media (prefers-reduced-motion: no-preference) {
   .card, .status, .prio, .cmt-btn, .filter, .icon-btn, .ghost, .seg button, .primary, .wk, .column, .input, .tray-day, .tray-arrow, #menu button, .radios label,
-  .rail-item, .round-btn, .stat {
+  .rail-item, .round-btn, .stat, .pj-tile, .swatch {
     transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
       color var(--dur-fast) var(--ease), box-shadow var(--dur) var(--ease), opacity var(--dur-fast) var(--ease),
       transform var(--dur-fast) var(--ease);

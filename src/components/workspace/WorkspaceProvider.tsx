@@ -2,10 +2,10 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { iso, planningMonday, monthStart, addDays } from '@/lib/dates';
-import { cleanTask, type Comment, type Task, type TaskFields, type TaskPatch } from '@/lib/tasks/model';
+import { cleanProject, cleanTask, type Comment, type Project, type ProjectFields, type ProjectPatch, type Task, type TaskFields, type TaskPatch } from '@/lib/tasks/model';
 import { createLocalStore } from '@/lib/store/local';
 import { createSupabaseStore } from '@/lib/store/supabase';
-import type { StoreError, TaskStore } from '@/lib/store/types';
+import type { StoreError, Table, TaskStore } from '@/lib/store/types';
 import { supabaseEnabled } from '@/lib/supabase/config';
 import { getBrowserSupabase } from '@/lib/supabase/client';
 
@@ -16,6 +16,10 @@ interface Workspace {
   mode: 'supabase' | 'local';
   account: Account;
   tasks: Task[];
+  /** The user's projects, oldest first */
+  projects: Project[];
+  /** Project by id; undefined for '' or a project that was deleted */
+  projectById: (id: string) => Project | undefined;
   comments: Record<string, Comment[]>;
   names: Record<string, string>;
   loaded: boolean;
@@ -34,6 +38,9 @@ interface Workspace {
   removeTask: (id: string) => void;
   addComment: (taskId: string, text: string) => void;
   removeComment: (taskId: string, id: string) => void;
+  addProject: (fields: Omit<ProjectFields, 'createdAt'>) => string;
+  updateProject: (id: string, patch: ProjectPatch) => void;
+  removeProject: (id: string) => void;
   signOut: () => Promise<void>;
   // UI helpers
   toast: (msg: string) => void;
@@ -59,6 +66,7 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
   );
   const [account, setAccount] = useState<Account>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [loaded, setLoaded] = useState(false);
   const [conn, setConn] = useState<Conn>('loading');
@@ -95,25 +103,34 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
     setComments(map);
   }, [store]);
 
-  const scheduleReload = useCallback((table: 'tasks' | 'comments') => {
+  const loadProjects = useCallback(async () => {
+    const raw = await store.loadProjects();
+    setProjects(raw.map(r => cleanProject(r.id, r)).filter(p => p.name).sort((a, b) => a.createdAt - b.createdAt));
+  }, [store]);
+
+  const scheduleReload = useCallback((table: Table) => {
     clearTimeout(reloadTimer.current[table]);
     reloadTimer.current[table] = setTimeout(function again() {
       // Don't overwrite optimistic changes with data fetched before our own writes finished.
       if (pending.current > 0) { reloadTimer.current[table] = setTimeout(again, 300); return; }
-      (table === 'tasks' ? loadTasks() : loadComments()).then(() => setConn('live')).catch(() => setConn('bad'));
+      const load = table === 'tasks' ? loadTasks : table === 'comments' ? loadComments : loadProjects;
+      // A missing projects table (migration not run yet) must not mark the whole app offline.
+      load().then(() => setConn('live')).catch(() => { if (table !== 'projects') setConn('bad'); });
     }, 150);
-  }, [loadTasks, loadComments]);
+  }, [loadTasks, loadComments, loadProjects]);
 
   useEffect(() => {
     let alive = true;
+    // Projects may not exist yet in an older database; tasks still load without them.
+    loadProjects().catch(() => undefined);
     Promise.all([loadTasks(), loadComments()])
       .then(() => { if (alive) { setLoaded(true); setConn('live'); } })
       .catch(() => { if (alive) { setLoaded(true); setConn('bad'); } });
     const stop = store.watch(scheduleReload);
-    const onVisible = () => { if (!document.hidden) { scheduleReload('tasks'); scheduleReload('comments'); } };
+    const onVisible = () => { if (!document.hidden) { scheduleReload('tasks'); scheduleReload('comments'); scheduleReload('projects'); } };
     document.addEventListener('visibilitychange', onVisible);
     return () => { alive = false; stop(); document.removeEventListener('visibilitychange', onVisible); };
-  }, [store, loadTasks, loadComments, scheduleReload]);
+  }, [store, loadTasks, loadComments, loadProjects, scheduleReload]);
 
   useEffect(() => {
     if (!supabaseEnabled) return;
@@ -128,7 +145,7 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
 
   // ----- Writes: optimistic, serialised per record, one retry when offline -----
   const queues = useRef<Record<string, Promise<unknown>>>({});
-  const run = useCallback((id: string, table: 'tasks' | 'comments', fn: () => Promise<void>) => {
+  const run = useCallback((id: string, table: Table, fn: () => Promise<void>) => {
     pending.current++;
     const attempt = () => fn().catch((e: StoreError) => {
       if (e?.code === 'unavailable') return new Promise(r => setTimeout(r, 400 + Math.random() * 600)).then(fn);
@@ -174,6 +191,30 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
     run(id, 'comments', () => store.deleteComment(id));
   }, [run, store]);
 
+  const addProject = useCallback((fields: Omit<ProjectFields, 'createdAt'>) => {
+    const id = crypto.randomUUID();
+    const p: Project = { ...fields, id, createdAt: Date.now() };
+    setProjects(ps => ps.concat(p));
+    const { id: _id, ...rest } = p;
+    run(id, 'projects', () => store.insertProject(id, rest));
+    return id;
+  }, [run, store]);
+
+  const updateProject = useCallback((id: string, patch: ProjectPatch) => {
+    setProjects(ps => ps.map(p => (p.id === id ? { ...p, ...patch } : p)));
+    run(id, 'projects', () => store.updateProject(id, patch));
+  }, [run, store]);
+
+  const removeProject = useCallback((id: string) => {
+    setProjects(ps => ps.filter(p => p.id !== id));
+    setTasks(ts => ts.map(t => (t.project === id ? { ...t, project: '' } : t)));
+    setFilter(f => (f === id ? 'all' : f));
+    run(id, 'projects', () => store.deleteProject(id)).then(() => scheduleReload('tasks'));
+  }, [run, store, scheduleReload]);
+
+  const projectMap = useMemo(() => new Map(projects.map(p => [p.id, p])), [projects]);
+  const projectById = useCallback((id: string) => (id ? projectMap.get(id) : undefined), [projectMap]);
+
   const signOut = useCallback(async () => {
     if (!supabaseEnabled) return;
     await getBrowserSupabase().auth.signOut();
@@ -183,9 +224,9 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
   const names = useMemo(() => (account ? { [account.id]: account.name } : {}), [account]);
 
   const value: Workspace = {
-    mode: store.kind, account, tasks, comments, names, loaded, conn, readOnly,
+    mode: store.kind, account, tasks, projects, projectById, comments, names, loaded, conn, readOnly,
     weekStart, setWeekStart, month, setMonth, filter, setFilter,
-    addTasks, patchTask, removeTask, addComment, removeComment, signOut,
+    addTasks, patchTask, removeTask, addComment, removeComment, addProject, updateProject, removeProject, signOut,
     toast, toastMsg, editingId, openEditor: setEditingId, dragId, setDragId,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -1,5 +1,5 @@
 import type { Comment } from '@/lib/tasks/model';
-import type { RawTask, TaskStore } from './types';
+import type { RawProject, RawTask, TaskStore } from './types';
 
 // Same keys and record shape as the original single-page app, so existing browser data still loads.
 const KEY = 'ps.db.';
@@ -29,10 +29,15 @@ export function createLocalStore(): TaskStore {
         return { id, taskId: String(v.taskId ?? ''), text: String(v.text ?? ''), at: Number(v.at) || 0, by: String(v.by ?? '') };
       }).filter(c => c.taskId && c.text);
     },
+    async loadProjects() {
+      const all = read('projects');
+      return Object.keys(all).map(id => ({ ...all[id], id }) as RawProject);
+    },
     watch(onChange) {
       const fn = (e: StorageEvent) => {
         if (e.key === KEY + 'tasks') onChange('tasks');
         if (e.key === KEY + 'comments') onChange('comments');
+        if (e.key === KEY + 'projects') onChange('projects');
       };
       window.addEventListener('storage', fn);
       return () => window.removeEventListener('storage', fn);
@@ -45,5 +50,11 @@ export function createLocalStore(): TaskStore {
     ]).then(() => undefined),
     insertComment: (c: Comment) => write('comments', all => { all[c.id] = { taskId: c.taskId, text: c.text, at: c.at, by: c.by }; }),
     deleteComment: id => write('comments', all => { delete all[id]; }),
+    insertProject: (id, fields) => write('projects', all => { all[id] = { ...fields }; }),
+    updateProject: (id, patch) => write('projects', all => { all[id] = { ...all[id], ...patch }; }),
+    deleteProject: id => Promise.all([
+      write('projects', all => { delete all[id]; }),
+      write('tasks', all => { for (const k in all) if (all[k].project === id) all[k] = { ...all[k], project: '' }; }),
+    ]).then(() => undefined),
   };
 }

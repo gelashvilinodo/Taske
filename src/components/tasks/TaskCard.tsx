@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { addDays, commentTime, DAYS_S, iso, parse, shortDate, today, weekday } from '@/lib/dates';
-import { closed, PRIORITIES, prioName, projectName, STATUSES, statusName, type Task } from '@/lib/tasks/model';
+import { closed, PRIORITIES, prioName, STATUSES, statusName, type Task } from '@/lib/tasks/model';
+import { ProjectChip, projectStyle } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import MenuButton from './MenuButton';
 
@@ -103,8 +104,9 @@ function Comments({ t, writable, focusSignal }: { t: Task; writable: boolean; fo
 
 /** One task on the board. `showDay` adds the day chip (used where cards are not grouped by day). */
 export default function TaskCard({ t, showDay = false }: { t: Task; showDay?: boolean }) {
-  const { readOnly, patchTask, openEditor, setDragId, comments } = useWorkspace();
+  const { readOnly, patchTask, openEditor, setDragId, comments, projectById } = useWorkspace();
   const writable = !readOnly;
+  const project = projectById(t.project);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [focusSignal, setFocusSignal] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -115,7 +117,8 @@ export default function TaskCard({ t, showDay = false }: { t: Task; showDay?: bo
 
   return (
     <article
-      className={'card pj-' + t.project + (t.status === 'done' ? ' is-done' : '') + (t.status === 'canceled' ? ' is-canceled' : '') + (dragging ? ' dragging' : '')}
+      className={'card' + (t.status === 'done' ? ' is-done' : '') + (t.status === 'canceled' ? ' is-canceled' : '') + (dragging ? ' dragging' : '')}
+      style={closed(t) ? undefined : projectStyle(project, '--pj')}
       draggable={writable || undefined}
       onDragStart={e => {
         e.dataTransfer.setData('text/plain', t.id);
@@ -132,7 +135,7 @@ export default function TaskCard({ t, showDay = false }: { t: Task; showDay?: bo
       <Description text={t.description} />
       <Subtasks t={t} writable={writable} />
       <div className="meta">
-        <span className={'chip p-' + t.project}>{projectName(t.project)}</span>
+        <ProjectChip project={project} />
         {showDay && <span className="chip">{DAYS_S[weekday(d)]}, {shortDate(d)}</span>}
         <DeadlineChip t={t} />
       </div>

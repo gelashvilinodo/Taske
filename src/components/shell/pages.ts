@@ -1,4 +1,4 @@
-import { IconBoard, IconCalendar, IconClock, IconList, IconTable } from './icons';
+import { IconBoard, IconCalendar, IconClock, IconFolder, IconList, IconTable } from './icons';
 
 /** Workspace pages, in sidebar order. `hint` is the line under the page title. */
 export const PAGES = [
@@ -7,6 +7,7 @@ export const PAGES = [
   { href: '/calendar', label: 'Calendar', hint: 'The month at a glance', Icon: IconCalendar },
   { href: '/content-calendar', label: 'Content calendar', hint: 'Posts and publishing by the hour', Icon: IconClock },
   { href: '/table', label: 'Table', hint: 'Every task in one sortable list', Icon: IconTable },
+  { href: '/projects', label: 'Projects', hint: 'Your projects, their colours and logos', Icon: IconFolder },
 ];
 
 export const pageFor = (path: string) => PAGES.find(p => path === p.href || path.startsWith(p.href + '/')) ?? PAGES[0];

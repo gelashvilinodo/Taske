@@ -1,12 +1,35 @@
 import { addDays, iso, isDate, parse, snapWeekday, today } from '@/lib/dates';
 
-export const PROJECTS = [
-  { id: 'skrib', name: 'Skrib' },
-  { id: 'sitbox', name: 'Sitbox' },
-  { id: 'modx', name: 'MODX' },
-  { id: 'excity', name: 'Ex City' },
-  { id: 'other', name: 'Other' },
-] as const;
+/** A project the user creates: a name, a colour and an optional logo. */
+export interface Project {
+  id: string;
+  name: string;
+  /** #rrggbb */
+  color: string;
+  /** Small image as a data: URL (resized in the browser), or '' */
+  logo: string;
+  createdAt: number;
+}
+export type ProjectFields = Omit<Project, 'id'>;
+export type ProjectPatch = Partial<ProjectFields>;
+
+/** Quick colour choices in the project editor; any other colour can be picked too. */
+export const PROJECT_COLORS = [
+  '#8a4dfa', '#c04de0', '#e0479e', '#ef4f5f', '#f0803c', '#e8b030',
+  '#4fbf6a', '#1fb5a0', '#2fa6e0', '#4a6cf0', '#8a8594', '#3b3850',
+];
+export const PROJECT_NAME_MAX = 60;
+const HEX = /^#[0-9a-f]{6}$/i;
+
+export function cleanProject(id: string, d: Record<string, unknown>): Project {
+  return {
+    id,
+    name: typeof d.name === 'string' ? d.name.slice(0, PROJECT_NAME_MAX) : '',
+    color: typeof d.color === 'string' && HEX.test(d.color) ? d.color.toLowerCase() : PROJECT_COLORS[0],
+    logo: typeof d.logo === 'string' && d.logo.startsWith('data:image/') ? d.logo : '',
+    createdAt: typeof d.createdAt === 'number' ? d.createdAt : 0,
+  };
+}
 export const STATUSES = [
   { id: 'todo', name: 'To do' },
   { id: 'doing', name: 'In progress' },
@@ -19,7 +42,6 @@ export const PRIORITIES = [
   { id: 'low', name: 'Low' },
 ] as const;
 
-export type ProjectId = (typeof PROJECTS)[number]['id'];
 export type StatusId = (typeof STATUSES)[number]['id'];
 export type PriorityId = (typeof PRIORITIES)[number]['id'] | '';
 
@@ -31,7 +53,8 @@ export interface Task {
   description: string;
   priority: PriorityId;
   subtasks: Subtask[];
-  project: ProjectId;
+  /** Project id, or '' for no project */
+  project: string;
   status: StatusId;
   /** YYYY-MM-DD, always a weekday */
   day: string;
@@ -44,7 +67,6 @@ export type TaskPatch = Partial<TaskFields>;
 
 export interface Comment { id: string; taskId: string; text: string; at: number; by: string }
 
-export const projectName = (id: string) => PROJECTS.find(p => p.id === id)?.name ?? 'Other';
 export const statusName = (id: string) => STATUSES.find(s => s.id === id)?.name ?? id;
 export const prioName = (id: string) => PRIORITIES.find(p => p.id === id)?.name ?? 'No priority';
 
@@ -60,7 +82,7 @@ export function cleanTask(id: string, d: Record<string, unknown>, fallbackDay: s
     subtasks: subs
       .filter(s => s && typeof s.title === 'string' && s.title)
       .map((s, i) => ({ id: typeof s.id === 'string' ? s.id : 's' + i, title: s.title as string, done: !!s.done })),
-    project: PROJECTS.some(p => p.id === d.project) ? (d.project as ProjectId) : 'other',
+    project: typeof d.project === 'string' ? d.project : '',
     status: STATUSES.some(s => s.id === d.status) ? (d.status as StatusId) : 'todo',
     day,
     deadline: isDate(d.deadline) ? d.deadline : '',

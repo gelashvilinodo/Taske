@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Comment, TaskFields, TaskPatch } from '@/lib/tasks/model';
-import type { RawTask, StoreError, TaskStore } from './types';
+import type { RawProject, RawTask, StoreError, TaskStore } from './types';
 
 // App field name → database column.
 const TASK_COLUMNS: Record<keyof TaskFields, string> = {
@@ -47,12 +47,20 @@ export function createSupabaseStore(sb: SupabaseClient): TaskStore {
       check(res);
       return (res.data ?? []).map(r => ({ id: r.id, taskId: r.task_id, text: r.text, at: Number(r.at) || 0, by: r.user_id }));
     },
+    async loadProjects() {
+      const res = await sb.from('projects').select('*');
+      check(res);
+      return (res.data ?? []).map(r => ({
+        id: String(r.id), name: r.name, color: r.color, logo: r.logo ?? '', createdAt: Number(r.created_at) || 0,
+      }) as RawProject);
+    },
     watch(onChange) {
       const channel = sb.channel('schedule-' + Math.random().toString(36).slice(2))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => onChange('tasks'))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => onChange('comments'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => onChange('projects'))
         .subscribe();
-      const online = () => { onChange('tasks'); onChange('comments'); };
+      const online = () => { onChange('tasks'); onChange('comments'); onChange('projects'); };
       window.addEventListener('online', online);
       return () => { window.removeEventListener('online', online); sb.removeChannel(channel); };
     },
@@ -61,5 +69,17 @@ export function createSupabaseStore(sb: SupabaseClient): TaskStore {
     deleteTask: async id => check(await sb.from('tasks').delete().eq('id', id)),
     insertComment: async (c: Comment) => check(await sb.from('comments').insert({ id: c.id, task_id: c.taskId, text: c.text, at: c.at })),
     deleteComment: async id => check(await sb.from('comments').delete().eq('id', id)),
+    insertProject: async (id, f) => check(await sb.from('projects').insert({ id, name: f.name, color: f.color, logo: f.logo || null, created_at: f.createdAt })),
+    updateProject: async (id, p) => {
+      const row: Record<string, unknown> = {};
+      if (p.name !== undefined) row.name = p.name;
+      if (p.color !== undefined) row.color = p.color;
+      if (p.logo !== undefined) row.logo = p.logo || null;
+      check(await sb.from('projects').update(row).eq('id', id));
+    },
+    deleteProject: async id => {
+      check(await sb.from('tasks').update({ project: '' }).eq('project', id));
+      check(await sb.from('projects').delete().eq('id', id));
+    },
   };
 }
