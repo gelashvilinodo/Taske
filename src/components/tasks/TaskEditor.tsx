@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { iso, isDate, parse, snapWeekday } from '@/lib/dates';
 import { makeSubs, PRIORITIES, STATUSES, type PriorityId, type StatusId, type Subtask } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
+import ProjectSelect from '@/components/projects/ProjectSelect';
 
 interface Draft {
   title: string; description: string; subtasks: Subtask[]; newSub: string;
@@ -71,7 +72,7 @@ export default function TaskEditor() {
   };
 
   return (
-    <dialog id="editor" ref={dialog} onClose={() => openEditor(null)}>
+    <dialog id="editor" ref={dialog} onClose={e => { if (e.target === e.currentTarget) openEditor(null); }}>
       {draft && (
         <form className="dlg" autoComplete="off" onSubmit={submit}>
           <h3>Edit task</h3>
@@ -120,12 +121,7 @@ export default function TaskEditor() {
               ))}
             </div>
           </div>
-          <label className="field"><span>Project</span>
-            <select className="input" value={projects.some(p => p.id === draft.project) ? draft.project : ''} onChange={e => set({ project: e.target.value })}>
-              <option value="">No project</option>
-              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </label>
+          <ProjectSelect value={draft.project} onChange={id => set({ project: id })} />
           <div className="two">
             <label className="field"><span>Day</span>
               <input className="input" type="date" required value={draft.day} onChange={e => set({ day: e.target.value })} />

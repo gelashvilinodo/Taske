@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { DAYS_S, iso, shortDate, today, weekDays } from '@/lib/dates';
 import { makeSubs, PRIORITIES, type PriorityId } from '@/lib/tasks/model';
-import Link from 'next/link';
+import ProjectSelect from '@/components/projects/ProjectSelect';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 
 /** Fired by a column's "+" button to open the form on that day. */
@@ -85,12 +85,7 @@ export default function AddTaskForm() {
             onChange={e => setTitle(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); } }} />
         </label>
-        <label className="field field-project"><span>Project{!projects.length && <> · <Link className="field-link" href="/projects">create one</Link></>}</span>
-          <select className="input" value={projects.some(p => p.id === project) ? project : ''} onChange={e => { setProject(e.target.value); writePref('ps.project', e.target.value); }}>
-            <option value="">No project</option>
-            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </label>
+        <ProjectSelect className="field-project" value={project} onChange={id => { setProject(id); writePref('ps.project', id); }} />
         <label className="field"><span>Priority</span>
           <select className="input" value={priority} onChange={e => setPriority(e.target.value as PriorityId)}>
             <option value="">None</option>

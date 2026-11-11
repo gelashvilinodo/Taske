@@ -284,7 +284,7 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
 #addOpen { display: none; }
 .add {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 140px 120px 150px 170px auto;
+  grid-template-columns: minmax(0, 1fr) 190px 120px 150px 170px auto;
   gap: var(--space-2) var(--space-3);
   align-items: end;
   background: var(--panel-bg);
@@ -475,6 +475,8 @@ span.card-title { cursor: default; }
 .pj-logo img { width: 100%; height: 100%; object-fit: contain; padding: 8%; }
 .pj-logo-xs { --pj-logo-size: 14px; }
 .pj-logo-xs img { padding: 0; }
+.pj-logo-md { --pj-logo-size: 20px; }
+.pj-logo-md img { padding: 4%; }
 .pj-logo-sm { --pj-logo-size: 28px; }
 .pj-logo-lg { --pj-logo-size: 64px; }
 
@@ -723,7 +725,58 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 .logo-row .ghost { min-height: var(--control-md); padding-inline: var(--space-4); }
 .logo-hint { font-size: var(--text-2xs); color: var(--color-muted); }
 .form-error { margin: 0; font-size: var(--text-sm); color: var(--color-bad); }
-.field-link { color: var(--color-accent-ink); }
+.select-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1-5); }
+/* Our own dropdown (project picker): glass list with logo + name */
+.pick { position: relative; min-width: 0; }
+.app > :has(.pick.is-open), .dlg .field:has(.pick.is-open) { position: relative; z-index: 20; }
+.pick-btn {
+  display: flex; align-items: center; gap: var(--space-2);
+  height: var(--control-md); padding-right: var(--space-2-5);
+  text-align: left; cursor: pointer;
+}
+.pick-btn:hover { border-color: var(--color-accent); }
+.pick.is-open .pick-btn { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-soft); }
+.pick-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick-chev { flex: none; color: var(--color-muted); transition: transform var(--dur-fast) var(--ease); }
+.pick.is-open .pick-chev { transform: rotate(180deg); }
+.pick-none {
+  flex: none; width: 20px; height: 20px; border-radius: 6px;
+  border: 1.5px dashed var(--color-line-strong);
+}
+.pick-list {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: var(--z-menu);
+  min-width: 200px; max-height: 300px; overflow: auto;
+  margin: 0; padding: var(--space-1); list-style: none;
+  display: grid; gap: 1px;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+  border: var(--border-width) solid var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--glass-highlight), var(--shadow-lg);
+  outline: none;
+}
+.pick-list.is-up { top: auto; bottom: calc(100% + 6px); }
+.pick-opt {
+  display: flex; align-items: center; gap: var(--space-2-5);
+  min-height: var(--control-sm); padding: var(--space-1-5) var(--space-2-5);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm); cursor: pointer;
+}
+.pick-opt.is-active { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.pick-opt[aria-selected="true"] { font-weight: var(--weight-semibold); }
+.pick-check { flex: none; color: var(--color-accent-ink); }
+@media (prefers-reduced-motion: no-preference) {
+  .pick-list { animation: pop var(--dur) var(--ease); }
+}
+
+.add-btn {
+  display: grid; place-items: center;
+  width: var(--control-md); height: var(--control-md);
+  border: var(--border-width) solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-soft); color: var(--color-accent-ink);
+}
+.add-btn:hover { background: var(--gradient-accent); color: var(--color-on-accent); border-color: transparent; box-shadow: var(--shadow-glow); }
 .filter .pj-logo-xs { margin-left: -2px; }
 .filter[aria-pressed="true"] .pj-logo { box-shadow: 0 0 0 1px rgb(255 255 255 / .6); }
 
@@ -781,7 +834,7 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 
 /* lg: laptops. Five day columns stay; the add form tightens */
 @media (max-width: 1279px) {
-  .add { grid-template-columns: minmax(0, 1fr) 120px 110px 140px 150px auto; }
+  .add { grid-template-columns: minmax(0, 1fr) 170px 110px 140px 150px auto; }
   .conn span { display: none; }
   .conn { width: var(--control-md); padding: 0; justify-content: center; }
 }
@@ -916,7 +969,7 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 /* ---------- Motion ---------- */
 @media (prefers-reduced-motion: no-preference) {
   .card, .status, .prio, .cmt-btn, .filter, .icon-btn, .ghost, .seg button, .primary, .wk, .column, .input, .tray-day, .tray-arrow, #menu button, .radios label,
-  .rail-item, .round-btn, .stat, .pj-tile, .swatch {
+  .rail-item, .round-btn, .stat, .pj-tile, .swatch, .add-btn {
     transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
       color var(--dur-fast) var(--ease), box-shadow var(--dur) var(--ease), opacity var(--dur-fast) var(--ease),
       transform var(--dur-fast) var(--ease);

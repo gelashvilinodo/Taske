@@ -9,7 +9,7 @@ import { ProjectLogo } from './ProjectBadge';
 type Draft = { name: string; color: string; logo: string };
 
 /** Create or edit a project: name, colour and logo. `project` null = new, undefined = closed. */
-export default function ProjectDialog({ project, onClose }: { project: Project | null | undefined; onClose: () => void }) {
+export default function ProjectDialog({ project, onClose, onCreated }: { project: Project | null | undefined; onClose: () => void; onCreated?: (id: string) => void }) {
   const { addProject, updateProject, removeProject, tasks, toast } = useWorkspace();
   const dialog = useRef<HTMLDialogElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -39,9 +39,15 @@ export default function ProjectDialog({ project, onClose }: { project: Project |
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    // React events bubble through portals; keep this submit away from a task form behind it.
+    e.stopPropagation();
     const name = draft.name.trim().slice(0, PROJECT_NAME_MAX);
     if (!name) { setError('Give the project a name.'); return; }
-    if (isNew) { addProject({ name, color: draft.color, logo: draft.logo }); toast('Project ' + name + ' created'); }
+    if (isNew) {
+      const id = addProject({ name, color: draft.color, logo: draft.logo });
+      onCreated?.(id);
+      toast('Project ' + name + ' created');
+    }
     else if (project) updateProject(project.id, { name, color: draft.color, logo: draft.logo });
     dialog.current?.close();
   };
@@ -57,7 +63,7 @@ export default function ProjectDialog({ project, onClose }: { project: Project |
   const custom = !PROJECT_COLORS.includes(draft.color);
 
   return (
-    <dialog ref={dialog} onClose={onClose} aria-labelledby="projectDlgTitle">
+    <dialog ref={dialog} onClose={e => { e.stopPropagation(); onClose(); }} aria-labelledby="projectDlgTitle">
       <form className="dlg" onSubmit={submit} autoComplete="off">
         <div className="pj-dlg-head">
           <ProjectLogo project={{ name: draft.name || '?', color: draft.color, logo: draft.logo }} size="lg" />

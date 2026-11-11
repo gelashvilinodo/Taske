@@ -8,7 +8,7 @@ export const projectStyle = (p: Project | undefined, name: '--pj' | '--c' = '--c
 const initial = (name: string) => (name.trim()[0] || '?').toUpperCase();
 
 /** Square logo tile: the uploaded logo, or the first letter on the project colour. */
-export function ProjectLogo({ project, size = 'sm' }: { project: Pick<Project, 'name' | 'color' | 'logo'>; size?: 'xs' | 'sm' | 'lg' }) {
+export function ProjectLogo({ project, size = 'sm' }: { project: Pick<Project, 'name' | 'color' | 'logo'>; size?: 'xs' | 'md' | 'sm' | 'lg' }) {
   return (
     <span className={'pj-logo pj-logo-' + size + (project.logo ? ' has-img' : '')} style={{ '--c': project.color } as CSSProperties} aria-hidden="true">
       {project.logo ? <img src={project.logo} alt="" /> : initial(project.name)}
