@@ -10,8 +10,15 @@ export async function getServerSupabase() {
       getAll: () => store.getAll(),
       setAll: list => {
         try { list.forEach(({ name, value, options }) => store.set(name, value, options)); }
-        catch { /* Server Components cannot set cookies; the proxy refreshes the session instead. */ }
+        catch { /* Server Components cannot set cookies; the browser client refreshes the session instead. */ }
       },
     },
   });
+}
+
+/** True when the request carries a valid Supabase session. */
+export async function isSignedIn() {
+  const supabase = await getServerSupabase();
+  const { data } = await supabase.auth.getClaims();
+  return Boolean(data?.claims);
 }

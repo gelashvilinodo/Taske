@@ -1,6 +1,8 @@
 # Taske — Personal Schedule
 
-Week planner for tasks across projects. Next.js (App Router) + TypeScript + Supabase.
+Week planner for tasks across projects. Next.js (App Router) + TypeScript + Supabase, hosted on Cloudflare Workers.
+
+Live: https://taske.nodogelashvili99.workers.dev
 
 ## Run locally
 
@@ -39,7 +41,6 @@ src/
     store/                persistence: Supabase or browser (local mode)
     supabase/             Supabase clients and session refresh
   styles/                 design tokens and shared styles
-  proxy.ts                session refresh and sign-in redirect
 supabase/migrations/      database schema, run in the Supabase SQL editor
 docs/PLAN.md              roadmap
 ```
@@ -51,3 +52,16 @@ docs/PLAN.md              roadmap
 | `npm run dev` | Development server |
 | `npm run build` | Production build |
 | `npm run typecheck` | TypeScript check |
+| `npm run preview` | Build for Cloudflare and run it locally in the Workers runtime |
+| `npm run deploy` | Build for Cloudflare and deploy to Workers |
+
+## Deploy (Cloudflare Workers)
+
+The app is built with [OpenNext for Cloudflare](https://opennext.js.org/cloudflare) and deployed with Wrangler (`wrangler.jsonc`, `open-next.config.ts`).
+
+```bash
+npx wrangler login   # once per machine
+npm run deploy
+```
+
+`NEXT_PUBLIC_SUPABASE_*` values are baked in at build time, so deploy from a machine that has `.env.local` filled in, and redeploy after changing them.
