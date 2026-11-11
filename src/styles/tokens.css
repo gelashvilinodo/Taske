@@ -188,6 +188,7 @@
   --rail-w: 68px;
   --window-pad: clamp(16px, 2.2vw, 32px);
   --tabbar-h: 64px;                       /* phone bottom tab bar */
+  --drag-edge-w: clamp(48px, 4vw, 72px);  /* week-switch strip at each screen edge while dragging */
 
   /* ---------- Motion ---------- */
   --dur-fast: 120ms;

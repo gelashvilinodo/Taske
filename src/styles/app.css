@@ -45,7 +45,7 @@ a { color: inherit; }
    Two levels, as in a window on a desk:
    - the shell (rail, window) and floating layers (menu, dialog, tray, toast) blur what is behind them;
    - everything inside the window is a light "panel" fill with no blur of its own. */
-.rail, .window, #menu, #tray, dialog, #toast {
+.rail, .window, #menu, dialog, #toast {
   -webkit-backdrop-filter: var(--glass-filter);
   backdrop-filter: var(--glass-filter);
 }
@@ -645,34 +645,40 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   box-shadow: var(--shadow-lg);
 }
 
-/* Drag tray (appears while dragging a card) */
-#tray {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-tray);
+/* Week-switch zones at the screen edges while a card is dragged on the board */
+.drag-edge {
+  position: fixed; top: 0; bottom: 0; z-index: var(--z-tray);
+  width: var(--drag-edge-w);
+  pointer-events: auto;
+}
+.drag-edge-left .drag-edge-card { left: var(--space-3); transform: translateY(-50%); }
+.drag-edge-right .drag-edge-card { right: var(--space-3); transform: translateY(-50%); }
+.drag-edge-left { left: 0; justify-items: start; background: linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent); }
+.drag-edge-right { right: 0; justify-items: end; background: linear-gradient(270deg, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent); }
+.drag-edge.is-over.drag-edge-left { background: linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 45%, transparent), transparent); }
+.drag-edge.is-over.drag-edge-right { background: linear-gradient(270deg, color-mix(in srgb, var(--color-accent) 45%, transparent), transparent); }
+.drag-edge-card {
+  /* Floats inward past the thin strip; pointer-events none so drops reach the column under it */
+  position: absolute; top: 50%; overflow: hidden;
+  display: grid; justify-items: center; gap: 2px;
+  padding: var(--space-3) var(--space-2);
+  width: 128px;
+  text-align: center;
   background: var(--glass-bg-strong);
-  border-top: var(--border-width) solid var(--glass-border);
-  box-shadow: var(--glass-highlight), 0 -10px 30px -10px rgb(0 0 0 / .35);
-  padding-block: var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
-  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
-  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+  -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+  border: var(--border-width) solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-highlight), var(--shadow-lg);
+  pointer-events: none;
 }
-.tray-in { max-width: var(--page-max); margin-inline: auto; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-4); align-items: center; }
-.tray-nav { display: flex; align-items: center; gap: var(--space-1-5); }
-.tray-week { min-width: 130px; text-align: center; font-weight: var(--weight-semibold); font-size: var(--text-md); font-variant-numeric: tabular-nums; }
-.tray-arrow, .tray-day {
-  min-height: var(--control-lg);
-  border-radius: var(--radius-md);
-  background: var(--color-sunk);
-}
-.tray-arrow { width: var(--control-lg); display: flex; align-items: center; justify-content: center; border: var(--border-width) solid var(--color-line-strong); font-size: var(--text-lg); }
-.tray-days { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
-.tray-day { display: flex; align-items: center; justify-content: center; border: 1.5px dashed var(--color-line-strong); padding: var(--space-1-5); font-size: var(--text-sm); }
-.tray-arrow.is-over, .tray-day.is-over {
-  border-style: solid; border-color: var(--color-accent);
-  background: var(--color-accent-soft); color: var(--color-accent-ink);
-  font-weight: var(--weight-semibold);
-  box-shadow: var(--shadow-glow);
-}
-.tray-hint { grid-column: 1 / -1; margin: 0; font-size: var(--text-xs); color: var(--color-muted); }
+.drag-edge.is-over .drag-edge-card { border-color: var(--color-accent); box-shadow: var(--glass-highlight), var(--shadow-glow); }
+.drag-edge-arrow { font-size: var(--text-xl); line-height: 1; color: var(--color-accent-ink); }
+.drag-edge-label { font-size: var(--text-2xs); font-weight: var(--weight-semibold); }
+.drag-edge-range { font: var(--weight-medium) var(--text-2xs) / 1.2 var(--font-data); color: var(--color-muted); }
+/* Fills while the card is held at the edge, so you can see the week is about to change */
+.drag-edge-fill { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--gradient-accent); }
+.drag-edge.is-over .drag-edge-fill { animation: edge-fill var(--edge-step, 550ms) linear forwards; }
+@keyframes edge-fill { to { width: 100%; } }
 
 /* ---------- Projects page ---------- */
 .pj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3); }
@@ -934,8 +940,6 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   .status-board { grid-template-columns: minmax(0, 1fr); }
 
   #toast { bottom: calc(var(--tabbar-h) + var(--space-4) + env(safe-area-inset-bottom, 0px)); }
-  .tray-in { grid-template-columns: minmax(0, 1fr); }
-  .tray-nav { justify-content: space-between; }
 }
 
 /* xs: narrow phones */
@@ -944,8 +948,6 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   .add { grid-template-columns: minmax(0, 1fr); }
   .two { grid-template-columns: minmax(0, 1fr); }
   .radios { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .tray-days { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-1); }
-  .tray-day { font-size: var(--text-2xs); padding: var(--space-1); }
   .stat-label { white-space: normal; }
   .pj-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
   .pj-tile { min-height: 180px; padding: var(--space-5) var(--space-3) var(--space-4); }
@@ -968,7 +970,7 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 
 /* ---------- Motion ---------- */
 @media (prefers-reduced-motion: no-preference) {
-  .card, .status, .prio, .cmt-btn, .filter, .icon-btn, .ghost, .seg button, .primary, .wk, .column, .input, .tray-day, .tray-arrow, #menu button, .radios label,
+  .card, .status, .prio, .cmt-btn, .filter, .icon-btn, .ghost, .seg button, .primary, .wk, .column, .input, #menu button, .radios label,
   .rail-item, .round-btn, .stat, .pj-tile, .swatch, .add-btn {
     transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
       color var(--dur-fast) var(--ease), box-shadow var(--dur) var(--ease), opacity var(--dur-fast) var(--ease),

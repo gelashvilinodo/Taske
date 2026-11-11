@@ -4,7 +4,7 @@ import AppHeader from '@/components/shell/AppHeader';
 import Sidebar from '@/components/shell/Sidebar';
 import Toast from '@/components/shell/Toast';
 import TaskEditor from '@/components/tasks/TaskEditor';
-import MoveTray from '@/components/tasks/MoveTray';
+import DragEdges from '@/components/tasks/DragEdges';
 import { supabaseEnabled } from '@/lib/supabase/config';
 import { isSignedIn } from '@/lib/supabase/server';
 
@@ -21,7 +21,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
         </div>
       </div>
       <TaskEditor />
-      <MoveTray />
+      <DragEdges />
       <Toast />
     </WorkspaceProvider>
   );
