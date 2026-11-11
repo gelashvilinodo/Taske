@@ -8,6 +8,10 @@ const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variabl
 
 export const metadata: Metadata = {
   title: 'Personal Schedule',
+  applicationName: 'Taske',
+  // iPhone "Add to Home Screen": name under the icon, full-screen launch, content under the status bar.
+  appleWebApp: { capable: true, title: 'Taske', statusBarStyle: 'black-translucent' },
+  formatDetection: { telephone: false },
   description: 'Week planner for tasks across projects.',
 };
 
