@@ -108,7 +108,16 @@
   --glass-bg-soft: light-dark(rgb(255 255 255 / .34), rgb(255 255 255 / .035));
   --glass-bg-strong: light-dark(rgb(252 251 248 / .86), rgb(22 21 32 / .86));
   --glass-border: light-dark(rgb(255 255 255 / .85), rgb(255 255 255 / .14));
-  --glass-highlight: inset 0 1px 0 light-dark(rgb(255 255 255 / .95), rgb(255 255 255 / .12));
+  /* Thickness: light hits the top edge, the bottom edge falls into shade, and a faint
+     glow sits just inside the top, so a surface reads as a slab of glass, not a sheet.
+     The last layer is a small contact shadow, so panels inside the window lift too. */
+  --glass-highlight:
+    inset 0 1px 0 light-dark(rgb(255 255 255 / 1), rgb(255 255 255 / .18)),
+    inset 0 12px 16px -12px light-dark(rgb(255 255 255 / .7), rgb(255 255 255 / .06)),
+    inset 0 -1px 0 light-dark(rgb(40 22 80 / .10), rgb(0 0 0 / .45)),
+    inset 0 -6px 10px -8px light-dark(rgb(40 22 80 / .08), rgb(0 0 0 / .35)),
+    0 1px 2px light-dark(rgb(40 22 80 / .06), rgb(0 0 0 / .30)),
+    0 6px 14px -8px light-dark(rgb(40 22 80 / .16), rgb(0 0 0 / .50));
   /* The big app window and the light panels inside it (panels do not blur) */
   --window-bg: light-dark(rgb(255 255 255 / .30), rgb(24 22 34 / .45));
   --panel-bg: light-dark(rgb(255 255 255 / .55), rgb(255 255 255 / .045));
@@ -116,9 +125,18 @@
   --panel-border: light-dark(rgb(255 255 255 / .85), rgb(255 255 255 / .08));
 
   /* ---------- Shadows (purple tinted) ---------- */
-  --shadow-sm: 0 1px 2px light-dark(rgb(40 22 80 / .08), rgb(0 0 0 / .35));
-  --shadow-md: 0 6px 20px -6px light-dark(rgb(40 22 80 / .18), rgb(0 0 0 / .55));
-  --shadow-lg: 0 18px 50px -12px light-dark(rgb(40 22 80 / .28), rgb(0 0 0 / .7));
+  /* Two layers each: a tight contact shadow right under the surface and a wide, soft
+     one further down. The further and wider the soft one, the higher the surface floats. */
+  --shadow-sm:
+    0 1px 2px light-dark(rgb(40 22 80 / .10), rgb(0 0 0 / .40)),
+    0 8px 18px -10px light-dark(rgb(40 22 80 / .18), rgb(0 0 0 / .55));
+  --shadow-md:
+    0 2px 4px light-dark(rgb(40 22 80 / .08), rgb(0 0 0 / .40)),
+    0 16px 36px -12px light-dark(rgb(40 22 80 / .24), rgb(0 0 0 / .65));
+  --shadow-lg:
+    0 2px 6px light-dark(rgb(40 22 80 / .10), rgb(0 0 0 / .45)),
+    0 12px 24px -8px light-dark(rgb(40 22 80 / .14), rgb(0 0 0 / .45)),
+    0 40px 80px -20px light-dark(rgb(40 22 80 / .32), rgb(0 0 0 / .75));
   --shadow-glow: 0 8px 24px -8px light-dark(rgb(111 36 234 / .45), rgb(138 77 250 / .6));
 
   /* ---------- Spacing (4px grid) ---------- */
