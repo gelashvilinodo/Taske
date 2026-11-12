@@ -2,6 +2,7 @@
 
 import { addDays, isoWeek, MONTHS, monthStart, planningMonday, rangeLabel, weekEnd } from '@/lib/dates';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
+import { IconNext, IconPrev, IconToday } from '@/components/shell/icons';
 
 /** Previous / next / back-to-now controls with the period title. */
 export default function PeriodNav({ unit }: { unit: 'week' | 'month' }) {
@@ -19,13 +20,13 @@ export default function PeriodNav({ unit }: { unit: 'week' | 'month' }) {
   return (
     <div className="nav">
       <div className="nav-left">
-        <button className="icon-btn" type="button" aria-label={isMonth ? 'Previous month' : 'Previous week'} onClick={() => shift(-1)}>←</button>
+        <button className="icon-btn" type="button" aria-label={isMonth ? 'Previous month' : 'Previous week'} onClick={() => shift(-1)}><IconPrev /></button>
         <div className="period">
           <span className="eyebrow">{isMonth ? month.getFullYear() : 'Week ' + isoWeek(weekStart) + ' · ' + addDays(weekStart, 3).getFullYear()}</span>
           <h2>{isMonth ? MONTHS[month.getMonth()] : rangeLabel(weekStart, weekEnd(weekStart), MONTHS)}</h2>
         </div>
-        <button className="icon-btn" type="button" aria-label={isMonth ? 'Next month' : 'Next week'} onClick={() => shift(1)}>→</button>
-        <button className="ghost" type="button" onClick={now}>{isMonth ? 'This month' : 'This week'}</button>
+        <button className="icon-btn" type="button" aria-label={isMonth ? 'Next month' : 'Next week'} onClick={() => shift(1)}><IconNext /></button>
+        <button className="ghost" type="button" onClick={now}><IconToday size={16} />{isMonth ? 'This month' : 'This week'}</button>
       </div>
     </div>
   );

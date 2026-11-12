@@ -12,6 +12,8 @@ img { max-width: 100%; }
 
 html { -webkit-text-size-adjust: 100%; }
 html, body { margin: 0; }
+/* While a modal window is open, the page behind it stays put */
+html:has(dialog[open]), html:has(dialog[open]) body { overflow: hidden; overscroll-behavior: none; }
 body {
   min-height: 100vh;
   min-height: 100dvh;
@@ -75,9 +77,16 @@ a { color: inherit; }
    Two levels, as in a window on a desk:
    - the shell (rail, window) and floating layers (menu, dialog, tray, toast) blur what is behind them;
    - everything inside the window is a light "panel" fill with no blur of its own. */
-.rail, .window, #menu, dialog, #toast {
+.rail, .window, .top, #menu, dialog, #toast {
   -webkit-backdrop-filter: var(--glass-filter);
   backdrop-filter: var(--glass-filter);
+}
+/* The header and window only ever sit over the backdrop, which is already soft gradients,
+   so they keep the colour boost but not the blur. Blur works per element and smears each
+   one's edge differently, which made the two show a colour step where they join. */
+.window, .top {
+  -webkit-backdrop-filter: saturate(var(--glass-saturate));
+  backdrop-filter: saturate(var(--glass-saturate));
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root {
@@ -102,8 +111,11 @@ body:has(.shell) { padding-bottom: max(var(--shell-pad), env(safe-area-inset-bot
   gap: var(--shell-gap);
   max-width: calc(var(--page-max) + var(--rail-w) + var(--shell-gap));
   margin-inline: auto;
-  min-height: calc(100dvh - 2 * var(--shell-pad));
+  /* Exactly one screen tall: the page itself never scrolls, only .page-scroll does */
+  height: calc(100dvh - var(--shell-pad) - var(--safe-top) - max(var(--shell-pad), env(safe-area-inset-bottom, 0px)));
+  grid-template-rows: minmax(0, 1fr);
 }
+html:has(.shell), body:has(.shell) { overflow: hidden; }
 
 .rail {
   position: sticky; top: calc(var(--shell-pad) + var(--safe-top));
@@ -182,14 +194,34 @@ body:has(.shell) { padding-bottom: max(var(--shell-pad), env(safe-area-inset-bot
   .rail-item:hover::after, .rail-item:focus-visible::after { opacity: 1; transform: translate(0, -50%); }
 }
 
+/* The column: the header stays put on top; everything under it scrolls in .page-scroll.
+   The scroll area starts right at the header's bottom edge, so the browser itself cuts
+   content off there: nothing ever shows above or through the header, and nothing lags. */
+.main-col {
+  --merge-gap: var(--space-3);
+  min-width: 0; min-height: 0;
+  display: flex; flex-direction: column;
+}
+.page-scroll {
+  --side-room: var(--shell-gap);
+  --bottom-room: max(var(--shell-pad), env(safe-area-inset-bottom, 0px));
+  flex: 1; min-height: 0;
+  overflow-x: hidden; overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Reach out to the screen edges so shadows aren't cut and the scrollbar sits at the side */
+  margin: 0 calc(-1 * var(--side-room)) calc(-1 * var(--bottom-room));
+  padding: var(--merge-gap) var(--side-room) var(--bottom-room);
+}
 .window {
   min-width: 0;
+  min-height: 100%;
   display: grid; align-content: start; gap: var(--space-5);
   padding: var(--window-pad);
   background: var(--window-bg);
   border: var(--border-width) solid var(--glass-border);
   border-radius: var(--radius-2xl);
   box-shadow: var(--glass-highlight), var(--shadow-lg);
+  transition: border-radius var(--dur-slow) var(--ease), border-color var(--dur-slow) var(--ease);
 }
 
 .app {
@@ -200,7 +232,67 @@ body:has(.shell) { padding-bottom: max(var(--shell-pad), env(safe-area-inset-bot
 .app > *, .toolbar > * { min-width: 0; }
 
 /* ---------- Window header ---------- */
-.top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-4); flex-wrap: wrap; }
+/* The header is its own glass bar above the scroll area. When the window scrolls up and
+   touches it (.main-col.is-merged), the corners between them flatten and the seam fades,
+   so the two read as one surface. */
+.top-wrap { position: relative; z-index: 2; flex: none; }
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-4); flex-wrap: wrap;
+  padding: var(--space-4) var(--window-pad);
+  background: var(--window-bg);
+  border: var(--border-width) solid var(--glass-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--glass-highlight), var(--shadow-lg);
+  transition:
+    border-radius var(--dur-slow) var(--ease),
+    border-color var(--dur-slow) var(--ease),
+    box-shadow var(--dur-slow) var(--ease);
+}
+.main-col.is-merged .top {
+  border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+  /* Keep the top shine of --glass-highlight, drop its dark bottom edge so no seam shows */
+  box-shadow:
+    inset 0 1px 0 light-dark(rgb(255 255 255 / 1), rgb(255 255 255 / .18)),
+    inset 0 12px 16px -12px light-dark(rgb(255 255 255 / .7), rgb(255 255 255 / .06));
+}
+.main-col.is-merged .window {
+  border-top-left-radius: 0; border-top-right-radius: 0;
+  border-top-color: transparent;
+}
+
+/* Progressive blur under the header's edge: three stacked layers, each blurring more and
+   reaching less far down, so content goes soft gradually and is fully hazy as it slips
+   under the header. Pinned to the top of the scroll area; shown only once merged. No
+   colour of its own, so the header and window keep exactly the same tint.
+   Sticky stops at the scroll area's top padding (the gap before merging), so the
+   negative top pulls it up flush with the header's bottom edge. */
+.page-fade {
+  position: sticky; top: calc(-1 * var(--merge-gap)); z-index: 3;
+  height: var(--space-12); margin-bottom: calc(-1 * var(--space-12));
+  pointer-events: none;
+}
+.page-fade i {
+  position: absolute; inset: 0 var(--border-width);
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+.page-fade i:nth-child(1) {
+  -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 30%, transparent 100%);
+}
+.page-fade i:nth-child(2) {
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 15%, transparent 65%);
+  mask-image: linear-gradient(to bottom, #000 15%, transparent 65%);
+}
+.page-fade i:nth-child(3) {
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 35%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 35%);
+}
+.main-col.is-merged .page-fade i { opacity: 1; }
 .page-head { min-width: 0; }
 .page-head h1 { margin: 0; font: var(--weight-bold) var(--text-2xl) / var(--leading-tight) var(--font-display); letter-spacing: -.02em; }
 .page-head p { margin: var(--space-1) 0 0; font-size: var(--text-sm); color: var(--color-muted); }
@@ -338,22 +430,50 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
 .danger:hover { border-color: color-mix(in srgb, var(--color-bad) 40%, transparent); }
 .danger.armed { background: color-mix(in srgb, var(--color-bad) 16%, transparent); border-color: var(--color-bad); }
 
-/* ---------- Add form ---------- */
-#addOpen { display: none; }
-.add {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 190px 120px 150px 170px auto;
-  gap: var(--space-2) var(--space-3);
-  align-items: end;
-  background: var(--panel-bg);
-  border: var(--border-width) solid var(--panel-border);
-  border-radius: var(--radius-xl);
-  padding: var(--space-3) var(--space-4);
-  box-shadow: var(--glass-highlight);
+/* ---------- New task window (opened by the "+" buttons) ---------- */
+.add-dlg {
+  --dialog-w: 600px;
+  overflow: visible;
+  /* See-through glass: the moving colour blobs stay visible behind the window */
+  background: light-dark(rgb(255 255 255 / .34), rgb(24 22 36 / .36));
+  border-color: light-dark(rgb(255 255 255 / .7), rgb(255 255 255 / .16));
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
 }
-.add .more, .add .field-wide { grid-column: 1 / -1; }
+/* A light tint, no blur, so the page and its backdrop keep moving underneath */
+.add-dlg::backdrop {
+  background: light-dark(rgb(20 12 40 / .1), rgb(0 0 0 / .3));
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.add-dlg .input { background: light-dark(rgb(255 255 255 / .5), rgb(0 0 0 / .22)); }
+/* Very short screens: the window scrolls instead, and its dropdowns fit inside it */
+@media (max-height: 560px) { .add-dlg { overflow: auto; } }
+.add-head { display: flex; align-items: center; gap: var(--space-2-5); }
+.add-head h3 { flex: 1; min-width: 0; }
+.add-head-icon {
+  display: grid; place-items: center; flex: none;
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  background: var(--gradient-accent); color: var(--color-on-accent);
+  box-shadow: var(--btn-depth-accent), var(--shadow-glow);
+}
+.dlg-x {
+  display: grid; place-items: center; flex: none;
+  width: var(--control-sm); height: var(--control-sm);
+  border: var(--border-width) solid transparent; border-radius: 50%;
+  background: transparent; color: var(--color-muted);
+}
+.dlg-x:hover { background: var(--panel-bg-hover); border-color: var(--panel-border); color: var(--color-ink); }
+.add-title { min-height: calc(var(--control-md) + 8px); font-size: var(--text-md); }
+.add-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+.add-foot { align-items: center; }
+.add-foot .more { justify-self: auto; }
 #editDesc, #addDesc, #addSubs { overflow: auto; resize: vertical; }
 .details-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.add-task-btn, .add-task-btn:hover {
+  background: var(--gradient-accent); color: var(--color-on-accent); border-color: transparent;
+  box-shadow: var(--btn-depth-accent), var(--shadow-glow);
+}
+.add-task-btn:hover { filter: brightness(1.1); }
 
 /* ---------- Notices, filters, stats ---------- */
 .notice {
@@ -540,6 +660,8 @@ span.card-title { cursor: default; }
   color: var(--c);
 }
 .chip.is-soon { --c: var(--color-warn); }
+.chip-ic { display: inline-flex; align-items: center; gap: 4px; }
+.chip-ic svg, .prio svg, .cmt-btn svg, .sub-toggle svg { flex: none; }
 .chip.is-over { --c: var(--color-bad); }
 .chip-project {
   display: inline-flex; align-items: center; gap: var(--space-1);
@@ -571,13 +693,22 @@ span.card-title { cursor: default; }
   display: inline-flex; align-items: center; gap: var(--space-1-5);
   min-height: var(--control-xs);
   padding: 0 var(--space-2);
-  border: var(--border-width) solid var(--color-line-strong);
+  /* Day: a light raised pill with a soft edge (a bare 1px outline read as just a line). Night: unchanged look. */
+  border: var(--border-width) solid light-dark(rgb(40 22 80 / .14), var(--color-line-strong));
   border-radius: var(--radius-pill);
-  background: transparent;
+  background: light-dark(rgb(255 255 255 / .78), transparent);
+  box-shadow: var(--btn-depth);
   font-size: var(--text-2xs); font-weight: var(--weight-medium);
   color: var(--color-muted);
 }
-button.status:hover, button.prio:hover, .cmt-btn:hover { border-color: var(--color-accent); color: var(--color-ink); }
+button.status:hover, button.prio:hover, .cmt-btn:hover {
+  border-color: var(--color-accent); color: var(--color-ink);
+  background-color: light-dark(#fff, var(--color-card-hover));
+  transform: translateY(-1px);
+  box-shadow: var(--btn-depth), 0 6px 14px -8px color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+button.status:active, button.prio:active, .cmt-btn:active { transform: translateY(1px); box-shadow: var(--btn-depth); }
+span.status, span.prio { box-shadow: none; }
 
 .status { justify-self: start; padding-left: var(--space-1-5); }
 .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid currentColor; }
@@ -861,6 +992,56 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 .pick-opt.is-active { background: var(--color-accent-soft); color: var(--color-accent-ink); }
 .pick-opt[aria-selected="true"] { font-weight: var(--weight-semibold); }
 .pick-check { flex: none; color: var(--color-accent-ink); }
+.pick-list.is-end { left: auto; right: 0; }
+.pick-hint {
+  flex: none; padding: 1px var(--space-2); border-radius: var(--radius-pill);
+  font-size: var(--text-2xs); font-weight: var(--weight-semibold);
+  background: var(--color-accent-soft); color: var(--color-accent-ink);
+}
+.pick-flag { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 7px; }
+.pick-flag.none { color: var(--color-faint); box-shadow: inset 0 0 0 1.5px var(--color-line-strong); }
+.pick-flag.pr-urgent { background: color-mix(in srgb, var(--color-bad) 15%, transparent); color: var(--color-bad); }
+.pick-flag.pr-high { background: color-mix(in srgb, var(--color-warn) 15%, transparent); color: var(--color-warn); }
+.pick-flag.pr-low { background: var(--color-sunk); color: var(--color-muted); }
+.pick-lead { flex: none; color: var(--color-muted); }
+.pick-text.is-empty { color: var(--color-faint); }
+
+/* Our own date picker: same glass list, holding a month calendar */
+.date-pick-row { position: relative; }
+.date-pick-row:has(.date-clear) .pick-btn { padding-right: calc(var(--space-2-5) + 26px); }
+.date-pick-row:has(.date-clear) .pick-chev { display: none; }
+.date-clear {
+  position: absolute; right: var(--space-2); top: 50%; translate: 0 -50%;
+  display: grid; place-items: center; width: 24px; height: 24px; padding: 0;
+  border: 0; border-radius: 50%; background: var(--color-sunk); color: var(--color-muted);
+}
+.date-clear:hover { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.cal { width: 296px; min-width: 0; right: auto; display: block; padding: var(--space-2-5); }
+.cal.is-end { left: auto; right: 0; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+.cal-head strong { font: var(--weight-semibold) var(--text-sm) / 1 var(--font-display); }
+.cal-nav, .cal-day, .cal-link { border: 0; background: transparent; color: inherit; padding: 0; }
+.cal-nav { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: var(--color-muted); }
+.cal-nav:hover { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.cal-grid { display: grid; gap: 2px; }
+.cal-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.cal-dow { text-align: center; font-size: var(--text-2xs); font-weight: var(--weight-semibold); color: var(--color-faint); padding-bottom: var(--space-1); text-transform: uppercase; letter-spacing: .04em; }
+.cal-day {
+  aspect-ratio: 1; display: grid; place-items: center;
+  border-radius: var(--radius-sm);
+  font: var(--weight-medium) var(--text-sm) / 1 var(--font-data); font-variant-numeric: tabular-nums;
+}
+.cal-day:hover { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.cal-day:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+.cal-day.is-out { color: var(--color-faint); }
+.cal-day.is-today { box-shadow: inset 0 0 0 1.5px var(--color-accent); color: var(--color-accent-ink); }
+.cal-day.is-on, .cal-day.is-on:hover {
+  background: var(--gradient-accent); color: var(--color-on-accent); font-weight: var(--weight-bold);
+  box-shadow: var(--btn-depth-accent), var(--shadow-glow);
+}
+.cal-foot { display: flex; justify-content: space-between; margin-top: var(--space-2); padding-top: var(--space-2); border-top: var(--border-width) solid var(--color-line); }
+.cal-link { font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--color-accent-ink); padding: var(--space-1) var(--space-2); border-radius: var(--radius-xs); }
+.cal-link:hover { background: var(--color-accent-soft); }
 @media (prefers-reduced-motion: no-preference) {
   .pick-list { animation: pop var(--dur) var(--ease); }
 }
@@ -957,10 +1138,6 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 
 /* lg: laptops. The add form tightens */
 @media (max-width: 1279px) {
-  /* Task title gets its own row; project, priority, day and deadline share the next one */
-  .add { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .add .field-title { grid-column: 1 / -1; }
-  .add .primary { grid-column: 4; }
   .conn span { display: none; }
   .conn { width: var(--control-md); padding: 0; justify-content: center; }
   /* Small laptops: four days at a time keeps each card wider than it is tall */
@@ -969,7 +1146,6 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 
 /* md: tablets. Days scroll sideways and snap, so each column keeps a readable width */
 @media (max-width: 1023px) {
-  .add .primary { grid-column: 1 / -1; }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .week { grid-auto-columns: minmax(240px, 42%); }
@@ -982,19 +1158,25 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 
 /* sm and xs: phones. The rail becomes a bottom tab bar; one column; add form folds away */
 @media (max-width: 767px) {
-  body:has(.shell) {
-    padding: 0;
-    padding-bottom: calc(var(--tabbar-h) + var(--space-4) + env(safe-area-inset-bottom, 0px));
+  body:has(.shell) { padding: 0; }
+  .shell { display: block; height: 100dvh; }
+  .main-col { --merge-gap: var(--space-2); height: 100%; }
+  .page-scroll {
+    --side-room: 0px;
+    /* Room to scroll the last card clear of the bottom tab bar */
+    --bottom-room: calc(var(--tabbar-h) + var(--space-4) + env(safe-area-inset-bottom, 0px));
   }
-  .shell { display: block; min-height: 0; }
-  .window {
+  .top {
     border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
     border-top: 0;
     /* Clear the status bar with room to spare, so the page title never sits under the clock */
-    padding-top: calc(var(--window-pad) + var(--safe-top));
+    padding-top: calc(var(--space-4) + var(--safe-top));
     padding-left: max(var(--window-pad), env(safe-area-inset-left, 0px));
     padding-right: max(var(--window-pad), env(safe-area-inset-right, 0px));
-    min-height: calc(100dvh - var(--tabbar-h) - var(--space-4));
+  }
+  .window {
+    padding-left: max(var(--window-pad), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--window-pad), env(safe-area-inset-right, 0px));
   }
   .rail {
     position: fixed; top: auto; left: var(--space-2); right: var(--space-2);
@@ -1076,15 +1258,8 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   .nav-left { width: 100%; flex-wrap: nowrap; }
   .period { flex: 1; }
 
-  #addOpen {
-    display: block; width: 100%;
-    min-height: var(--control-md);
-    border-style: dashed;
-    color: var(--color-accent-ink);
-    font-weight: var(--weight-semibold);
-  }
-  .add { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .add:not(.is-open) { display: none; }
+  .add-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .add-meta > :last-child { grid-column: 1 / -1; }
   .details-row { grid-template-columns: minmax(0, 1fr); }
 
   .filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
@@ -1163,7 +1338,10 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 /* xs: narrow phones */
 @media (max-width: 479px) {
   .soon { padding: var(--space-5) var(--space-4); }
-  .add { grid-template-columns: minmax(0, 1fr); }
+  /* New task window: buttons share the full width at the bottom of the sheet */
+  .add-foot { flex-direction: column; align-items: stretch; }
+  .add-foot > div { display: grid; grid-template-columns: 1fr 1.6fr; }
+  .add-foot .more { justify-content: center; padding: var(--space-1) 0; }
   .two { grid-template-columns: minmax(0, 1fr); }
   .radios { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stat-label { white-space: normal; }
@@ -1207,3 +1385,14 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 }
 @keyframes rise { from { opacity: 0; transform: translateY(12px) scale(.98); } }
 @keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+
+/* ---------- Icons inside buttons and labels (Hugeicons, see components/shell/icons.tsx) ---------- */
+.ghost, .primary, .danger, .more { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1-5); }
+.field > span, .fieldset-label { display: inline-flex; align-items: center; gap: var(--space-1); }
+.field > span svg, .fieldset-label svg { color: var(--color-faint); }
+.dlg-title { display: flex; align-items: center; gap: var(--space-2); }
+.dlg-title svg { color: var(--color-accent-ink); }
+.radios label { display: flex; justify-content: center; align-items: center; gap: var(--space-1); }
+.col-add, .sub-del { display: inline-grid; place-items: center; }
+.tasks-table th button { display: inline-flex; align-items: center; gap: 3px; }
+:is(.ghost, .primary, .danger, .more, .field > span, .fieldset-label, .radios label, .tasks-table th button, .sub-toggle) svg { flex: none; }

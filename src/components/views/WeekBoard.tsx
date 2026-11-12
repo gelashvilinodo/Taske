@@ -8,6 +8,7 @@ import { useVisibleTasks } from '@/components/tasks/Filters';
 import { requestAddOnDay } from '@/components/tasks/AddTaskForm';
 import DropColumn from '@/components/tasks/DropColumn';
 import { DRAG_EDGE_EVENT } from '@/components/tasks/TaskDrag';
+import { IconPlus } from '@/components/shell/icons';
 
 /** Board page: Monday–Sunday columns. Drop a card on a column to move it to that day. */
 export default function WeekBoard() {
@@ -117,7 +118,7 @@ export default function WeekBoard() {
                   <span className="col-date">{shortDate(d) + (ds === td ? ' · today' : '')}</span>
                 </div>
                 {!readOnly && (
-                  <button className="col-add" type="button" aria-label={'Add task on ' + DAYS[i]} title="Add to this day" onClick={() => requestAddOnDay(ds)}>+</button>
+                  <button className="col-add" type="button" aria-label={'Add task on ' + DAYS[i]} title="Add to this day" onClick={() => requestAddOnDay(ds)}><IconPlus size={16} /></button>
                 )}
               </header>
             }

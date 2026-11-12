@@ -11,6 +11,8 @@
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
+    "@hugeicons/core-free-icons": "4.4.0",
+    "@hugeicons/react": "1.1.10",
     "@opennextjs/cloudflare": "1.20.16",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.119.0",

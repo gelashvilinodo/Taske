@@ -3,6 +3,7 @@
 import { iso, planningMonday, today, weekEnd } from '@/lib/dates';
 import { closed, inWeek } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
+import { IconToday } from '@/components/shell/icons';
 
 /** Status line (loading, empty week, connection) and the "carry unfinished tasks" prompt. */
 export default function WeekNotices() {
@@ -27,7 +28,7 @@ export default function WeekNotices() {
       {left.length > 0 && (
         <div className="notice warn">
           <span>{left.length + (left.length === 1 ? ' unfinished task' : ' unfinished tasks')} left from earlier weeks.</span>
-          <button className="ghost" type="button" onClick={() => left.forEach(t => patchTask(t.id, { day: target }))}>Move to this week</button>
+          <button className="ghost" type="button" onClick={() => left.forEach(t => patchTask(t.id, { day: target }))}><IconToday size={16} />Move to this week</button>
         </div>
       )}
     </>

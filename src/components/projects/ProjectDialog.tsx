@@ -5,6 +5,7 @@ import { PROJECT_COLORS, PROJECT_NAME_MAX, type Project } from '@/lib/tasks/mode
 import { prepareLogo } from '@/lib/tasks/logo';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { ProjectLogo } from './ProjectBadge';
+import { IconFolderAdd, IconSave, IconTrash, IconUpload } from '@/components/shell/icons';
 
 type Draft = { name: string; color: string; logo: string };
 
@@ -93,9 +94,9 @@ export default function ProjectDialog({ project, onClose, onCreated }: { project
           <span className="fieldset-label">Logo</span>
           <div className="logo-row">
             <button className="ghost" type="button" disabled={busy} onClick={() => fileInput.current?.click()}>
-              {busy ? 'Preparing…' : draft.logo ? 'Replace logo' : 'Upload logo'}
+              <IconUpload size={16} />{busy ? 'Preparing…' : draft.logo ? 'Replace logo' : 'Upload logo'}
             </button>
-            {draft.logo && <button className="ghost" type="button" onClick={() => set({ logo: '' })}>Remove</button>}
+            {draft.logo && <button className="ghost" type="button" onClick={() => set({ logo: '' })}><IconTrash size={16} />Remove</button>}
             <span className="logo-hint">PNG, JPG, SVG or WebP, up to 5 MB. Shrunk to {128}px.</span>
             <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" hidden
               onChange={e => pickFile(e.target.files?.[0])} />
@@ -107,12 +108,12 @@ export default function ProjectDialog({ project, onClose, onCreated }: { project
         <div className="dlg-foot">
           {!isNew ? (
             <button className={'danger' + (armed ? ' armed' : '')} type="button" onClick={remove}>
-              {armed ? (used ? `Delete, ${used} task${used === 1 ? '' : 's'} keep no project` : 'Confirm delete') : 'Delete'}
+              <IconTrash size={16} />{armed ? (used ? `Delete, ${used} task${used === 1 ? '' : 's'} keep no project` : 'Confirm delete') : 'Delete'}
             </button>
           ) : <span />}
           <div>
             <button className="ghost" type="button" onClick={() => dialog.current?.close()}>Cancel</button>
-            <button className="primary" type="submit" disabled={busy}>{isNew ? 'Create project' : 'Save'}</button>
+            <button className="primary" type="submit" disabled={busy}>{isNew ? <><IconFolderAdd size={16} />Create project</> : <><IconSave size={16} />Save</>}</button>
           </div>
         </div>
       </form>

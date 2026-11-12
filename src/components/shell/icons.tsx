@@ -1,24 +1,69 @@
-/** Small stroke icons used across the shell. 24×24 grid, colour comes from the text. */
-import type { SVGProps } from 'react';
+/**
+ * App icons: Hugeicons, Free Stroke Rounded (@hugeicons/core-free-icons).
+ * Every icon in the app comes from here, so swapping one glyph is a one-line change.
+ * Colour comes from the text (currentColor). Pass `size` (or width/height) to resize.
+ */
+import { HugeiconsIcon } from '@hugeicons/react';
+import {
+  Add01Icon, Alert02Icon, ArrowDown01Icon, ArrowDown02Icon, ArrowLeft01Icon, ArrowRight01Icon, ArrowUp01Icon,
+  ArrowUp02Icon, BubbleChatIcon, Calendar03Icon, CalendarCheckIn01Icon, Cancel01Icon, CheckmarkCircle02Icon,
+  CircleIcon, Clock01Icon, Delete02Icon, Flag02Icon, Folder01Icon, FolderAddIcon, ImageUpload01Icon, KanbanIcon,
+  LeftToRightListBulletIcon, Login03Icon, Logout03Icon, Mail01Icon, MinusSignIcon, Moon02Icon, PencilEdit01Icon,
+  Progress02Icon, SentIcon, Sun03Icon, Table01Icon, TaskAdd01Icon, TaskDone01Icon, TextAlignLeftIcon, Tick02Icon,
+} from '@hugeicons/core-free-icons';
 
-type P = SVGProps<SVGSVGElement>;
-const base = (p: P) => ({
-  width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
-  strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true, ...p,
-});
+type Glyph = Parameters<typeof HugeiconsIcon>[0]['icon'];
+type P = { size?: number; width?: number | string; height?: number | string; strokeWidth?: number; className?: string };
 
-export const IconBoard = (p: P) => (<svg {...base(p)}><rect x="3" y="4" width="5" height="16" rx="1.5" /><rect x="10" y="4" width="5" height="11" rx="1.5" /><rect x="17" y="4" width="4" height="7" rx="1.5" /></svg>);
-export const IconList = (p: P) => (<svg {...base(p)}><path d="M9 6h11M9 12h11M9 18h11" /><circle cx="4.5" cy="6" r="1" /><circle cx="4.5" cy="12" r="1" /><circle cx="4.5" cy="18" r="1" /></svg>);
-export const IconCalendar = (p: P) => (<svg {...base(p)}><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M3 10h18M8 3v4M16 3v4" /></svg>);
-export const IconClock = (p: P) => (<svg {...base(p)}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>);
-export const IconTable = (p: P) => (<svg {...base(p)}><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M3 10h18M3 15h18M9 10v10" /></svg>);
-export const IconSun = (p: P) => (<svg {...base(p)}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>);
-export const IconMoon = (p: P) => (<svg {...base(p)}><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" /></svg>);
-export const IconLogout = (p: P) => (<svg {...base(p)}><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11" /></svg>);
-export const IconPlus = (p: P) => (<svg {...base(p)}><path d="M12 5v14M5 12h14" /></svg>);
-export const IconTodo = (p: P) => (<svg {...base(p)}><circle cx="12" cy="12" r="8" /></svg>);
-export const IconDoing = (p: P) => (<svg {...base(p)}><circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" /></svg>);
-export const IconDone = (p: P) => (<svg {...base(p)}><circle cx="12" cy="12" r="8" /><path d="m8.5 12 2.5 2.5 4.5-5" /></svg>);
-export const IconAlert = (p: P) => (<svg {...base(p)}><path d="M12 3 2 20h20L12 3Z" /><path d="M12 10v4M12 17h.01" /></svg>);
-export const IconFolder = (p: P) => (<svg {...base(p)}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /></svg>);
-export const IconChevronUp = (p: P) => (<svg {...base(p)}><path d="m6 15 6-6 6 6" /></svg>);
+const make = (icon: Glyph) => {
+  const C = ({ size, width, height, strokeWidth = 1.5, className }: P) => (
+    <HugeiconsIcon icon={icon} size={size ?? Number(width ?? height ?? 18)} strokeWidth={strokeWidth}
+      color="currentColor" className={className} aria-hidden="true" />
+  );
+  return C;
+};
+
+// Pages and shell
+export const IconBoard = make(KanbanIcon);
+export const IconList = make(LeftToRightListBulletIcon);
+export const IconCalendar = make(Calendar03Icon);
+export const IconClock = make(Clock01Icon);
+export const IconTable = make(Table01Icon);
+export const IconFolder = make(Folder01Icon);
+export const IconSun = make(Sun03Icon);
+export const IconMoon = make(Moon02Icon);
+export const IconLogout = make(Logout03Icon);
+export const IconPlus = make(Add01Icon);
+export const IconChevronUp = make(ArrowUp01Icon);
+
+// Status and week stats
+export const IconTodo = make(CircleIcon);
+export const IconDoing = make(Progress02Icon);
+export const IconDone = make(CheckmarkCircle02Icon);
+export const IconAlert = make(Alert02Icon);
+
+// Task cards
+export const IconFlag = make(Flag02Icon);
+export const IconComment = make(BubbleChatIcon);
+export const IconSubtasks = make(TaskDone01Icon);
+export const IconEdit = make(PencilEdit01Icon);
+export const IconTrash = make(Delete02Icon);
+export const IconDescription = make(TextAlignLeftIcon);
+export const IconSend = make(SentIcon);
+
+// Buttons and navigation
+export const IconPrev = make(ArrowLeft01Icon);
+export const IconNext = make(ArrowRight01Icon);
+export const IconChevronDown = make(ArrowDown01Icon);
+export const IconChevronRight = make(ArrowRight01Icon);
+export const IconSortUp = make(ArrowUp02Icon);
+export const IconSortDown = make(ArrowDown02Icon);
+export const IconClose = make(Cancel01Icon);
+export const IconMinus = make(MinusSignIcon);
+export const IconSave = make(Tick02Icon);
+export const IconToday = make(CalendarCheckIn01Icon);
+export const IconFolderAdd = make(FolderAddIcon);
+export const IconUpload = make(ImageUpload01Icon);
+export const IconMail = make(Mail01Icon);
+export const IconLogin = make(Login03Icon);
+export const IconTaskAdd = make(TaskAdd01Icon);

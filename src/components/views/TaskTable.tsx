@@ -6,6 +6,7 @@ import { closed, compareTasks, prioName, statusName, type Project, type Task } f
 import { ProjectChip } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { useVisibleTasks } from '@/components/tasks/Filters';
+import { IconSortDown, IconSortUp } from '@/components/shell/icons';
 
 type Col = 'title' | 'project' | 'status' | 'priority' | 'day' | 'deadline';
 const COLS: { id: Col; label: string }[] = [
@@ -43,7 +44,7 @@ export default function TaskTable() {
           <tr>
             {COLS.map(c => (
               <th key={c.id} aria-sort={sort.col === c.id ? (sort.dir === 1 ? 'ascending' : 'descending') : undefined}>
-                <button type="button" onClick={() => toggle(c.id)}>{c.label}{sort.col === c.id ? (sort.dir === 1 ? ' ↑' : ' ↓') : ''}</button>
+                <button type="button" onClick={() => toggle(c.id)}>{c.label}{sort.col === c.id ? (sort.dir === 1 ? <IconSortUp size={13} /> : <IconSortDown size={13} />) : null}</button>
               </th>
             ))}
             <th>Subtasks</th>

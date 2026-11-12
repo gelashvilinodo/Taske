@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { getBrowserSupabase } from '@/lib/supabase/client';
 import styles from './LoginForm.module.css';
+import { IconLogin, IconMail } from '@/components/shell/icons';
 
 export type Provider = 'apple' | 'google';
 
@@ -92,11 +93,11 @@ export default function LoginForm({ initialError, providers }: { initialError: s
 
       {step === 'email' ? (
         <form className={styles.form} onSubmit={onEmail} noValidate>
-          <label className="field"><span>Email</span>
+          <label className="field"><span><IconMail size={14} />Email</span>
             <input className="input" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com"
               value={email} onChange={e => setEmail(e.target.value)} required />
           </label>
-          <button className="primary" type="submit" disabled={!!busy}>{busy === 'email' ? 'Sending…' : 'Continue with email'}</button>
+          <button className="primary" type="submit" disabled={!!busy}><IconMail size={16} />{busy === 'email' ? 'Sending…' : 'Continue with email'}</button>
         </form>
       ) : (
         <form className={styles.form} onSubmit={onCode} noValidate>
@@ -105,7 +106,7 @@ export default function LoginForm({ initialError, providers }: { initialError: s
             <input className={`input ${styles.code}`} type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={10}
               value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} autoFocus required />
           </label>
-          <button className="primary" type="submit" disabled={!!busy}>{busy === 'code' ? 'Signing in…' : 'Sign in'}</button>
+          <button className="primary" type="submit" disabled={!!busy}><IconLogin size={16} />{busy === 'code' ? 'Signing in…' : 'Sign in'}</button>
           <div className={styles.row}>
             <button className={styles.link} type="button" onClick={() => { setMsg({ text: '' }); setStep('email'); }}>Use a different email</button>
             <button className={styles.link} type="button" disabled={!!busy} onClick={resend}>Send again</button>

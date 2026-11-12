@@ -17,9 +17,14 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
       <TaskDragProvider>
       <div className="shell">
         <Sidebar />
-        <div className="window">
+        <div className="main-col">
           <AppHeader />
-          <div className="app">{children}</div>
+          <div className="page-scroll">
+            <div className="page-fade" aria-hidden="true"><i /><i /><i /></div>
+            <div className="window">
+              <div className="app">{children}</div>
+            </div>
+          </div>
         </div>
       </div>
       <TaskEditor />

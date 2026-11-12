@@ -123,7 +123,7 @@ export default function TaskDragProvider({ children }: { children: ReactNode }) 
       let dy = 0;
       if (lastY < SCROLL_ZONE) dy = -Math.ceil((SCROLL_ZONE - lastY) / 6);
       else if (lastY > innerHeight - SCROLL_ZONE - bottomGuard) dy = Math.ceil((lastY - (innerHeight - SCROLL_ZONE - bottomGuard)) / 6);
-      if (dy) { window.scrollBy(0, dy); update(hitTest(lastX, lastY, id)); }
+      if (dy) { (document.querySelector('.page-scroll') ?? window).scrollBy(0, dy); update(hitTest(lastX, lastY, id)); }
       raf = requestAnimationFrame(tick);
     };
 

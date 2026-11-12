@@ -5,6 +5,7 @@ import { addDays, commentTime, DAYS_S, iso, parse, shortDate, today, weekday } f
 import { closed, PRIORITIES, prioName, STATUSES, statusName, type Task } from '@/lib/tasks/model';
 import { ProjectChip, projectStyle } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
+import { IconCalendar, IconChevronDown, IconChevronRight, IconClock, IconComment, IconFlag, IconSend, IconSubtasks } from '@/components/shell/icons';
 import MenuButton from './MenuButton';
 import { useTaskDrag } from './TaskDrag';
 
@@ -12,11 +13,12 @@ function DeadlineChip({ t }: { t: Task }) {
   if (!t.deadline) return null;
   const td = iso(today());
   const label = shortDate(parse(t.deadline));
-  if (closed(t)) return <span className="chip">Due {label}</span>;
-  if (t.deadline < td) return <span className="chip is-over">Overdue, {label}</span>;
-  if (t.deadline === td) return <span className="chip is-soon">Due today</span>;
-  if (t.deadline === iso(addDays(today(), 1))) return <span className="chip is-soon">Due tomorrow</span>;
-  return <span className="chip">Due {label}</span>;
+  const chip = (cls: string, text: string) => <span className={'chip chip-ic' + cls}><IconClock size={13} />{text}</span>;
+  if (closed(t)) return chip('', 'Due ' + label);
+  if (t.deadline < td) return chip(' is-over', 'Overdue, ' + label);
+  if (t.deadline === td) return chip(' is-soon', 'Due today');
+  if (t.deadline === iso(addDays(today(), 1))) return chip(' is-soon', 'Due tomorrow');
+  return chip('', 'Due ' + label);
 }
 
 function Description({ text }: { text: string }) {
@@ -40,7 +42,7 @@ function Subtasks({ t, writable }: { t: Task; writable: boolean }) {
   return (
     <>
       <button className="sub-toggle" type="button" aria-expanded={open} onClick={() => setOpen(o => !o)}>
-        <span>{(open ? '▾ ' : '▸ ') + 'Subtasks'}</span><b>{done}/{n}</b>
+        <IconSubtasks size={14} /><span>Subtasks</span><b>{done}/{n}</b>{open ? <IconChevronDown size={13} /> : <IconChevronRight size={13} />}
         <span className="meter"><i style={{ width: Math.round(done / n * 100) + '%' }} /></span>
       </button>
       {open && (
@@ -96,7 +98,7 @@ function Comments({ t, writable, focusSignal }: { t: Task; writable: boolean; fo
           <textarea ref={box} className="input" rows={1} placeholder="Write a comment" aria-label="Write a comment" value={draft}
             onChange={e => setDraft(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} />
-          <button className="ghost" type="button" onClick={send}>Send</button>
+          <button className="ghost" type="button" onClick={send}><IconSend size={15} />Send</button>
         </div>
       )}
     </div>
@@ -131,7 +133,7 @@ export default function TaskCard({ t, showDay = false, ghost = false }: { t: Tas
       <Subtasks t={t} writable={writable} />
       <div className="meta">
         <ProjectChip project={project} />
-        {showDay && <span className="chip">{DAYS_S[weekday(d)]}, {shortDate(d)}</span>}
+        {showDay && <span className="chip chip-ic"><IconCalendar size={13} />{DAYS_S[weekday(d)]}, {shortDate(d)}</span>}
         <DeadlineChip t={t} />
       </div>
       <div className="card-foot">
@@ -147,13 +149,13 @@ export default function TaskCard({ t, showDay = false, ghost = false }: { t: Tas
             ariaLabel={'Priority: ' + (t.priority ? prioName(t.priority) : 'none') + '. Click to change'}
             items={[...PRIORITIES, { id: '', name: 'No priority' }]} current={t.priority}
             onPick={id => patchTask(t.id, { priority: id as Task['priority'] })}>
-            {t.priority ? prioName(t.priority) : 'Priority'}
+            <IconFlag size={14} />{t.priority ? prioName(t.priority) : 'Priority'}
           </MenuButton>
-        ) : t.priority ? <span className={'prio pr-' + t.priority}>{prioName(t.priority)}</span> : null}
+        ) : t.priority ? <span className={'prio pr-' + t.priority}><IconFlag size={14} />{prioName(t.priority)}</span> : null}
         {(writable || n > 0) && (
           <button className={'cmt-btn' + (n ? ' has' : '')} type="button" aria-expanded={commentsOpen}
             onClick={() => (commentsOpen ? setCommentsOpen(false) : openComments())}>
-            {n ? 'Comments ' + n : 'Comment'}
+            <IconComment size={14} />{n ? 'Comments ' + n : 'Comment'}
           </button>
         )}
       </div>

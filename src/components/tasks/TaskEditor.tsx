@@ -5,6 +5,11 @@ import { isDate } from '@/lib/dates';
 import { makeSubs, PRIORITIES, STATUSES, type PriorityId, type StatusId, type Subtask } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import ProjectSelect from '@/components/projects/ProjectSelect';
+import DatePicker from '@/components/ui/DatePicker';
+import { IconCalendar, IconClock, IconClose, IconDescription, IconDoing, IconDone, IconEdit, IconFlag, IconPlus, IconSave, IconSubtasks, IconTodo, IconTrash } from '@/components/shell/icons';
+
+/** Small status glyph inside the status radio buttons; canceled keeps text only. */
+const StatusIcon = ({ id }: { id: string }) => (id === 'todo' ? <IconTodo size={14} /> : id === 'doing' ? <IconDoing size={14} /> : id === 'done' ? <IconDone size={14} /> : <IconClose size={14} />);
 
 interface Draft {
   title: string; description: string; subtasks: Subtask[]; newSub: string;
@@ -72,16 +77,16 @@ export default function TaskEditor() {
     <dialog id="editor" ref={dialog} onClose={e => { if (e.target === e.currentTarget) openEditor(null); }}>
       {draft && (
         <form className="dlg" autoComplete="off" onSubmit={submit}>
-          <h3>Edit task</h3>
-          <label className="field"><span>Task</span>
+          <h3 className="dlg-title"><IconEdit size={20} />Edit task</h3>
+          <label className="field"><span><IconSubtasks size={14} />Task</span>
             <textarea className="input" rows={2} required value={draft.title} onChange={e => set({ title: e.target.value })} />
           </label>
-          <label className="field"><span>Description</span>
+          <label className="field"><span><IconDescription size={14} />Description</span>
             <textarea id="editDesc" className="input" rows={3} placeholder="Details, links, who to check with"
               value={draft.description} onChange={e => set({ description: e.target.value })} />
           </label>
           <div className="field">
-            <span className="fieldset-label">Subtasks</span>
+            <span className="fieldset-label"><IconSubtasks size={14} />Subtasks</span>
             <div className="sub-edit">
               {draft.subtasks.map((s, i) => (
                 <div className="sub-row" key={s.id}>
@@ -91,7 +96,7 @@ export default function TaskEditor() {
                     onChange={e => set({ subtasks: draft.subtasks.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); newSubInput.current?.focus(); } }} />
                   <button className="sub-del" type="button" aria-label="Remove subtask"
-                    onClick={() => set({ subtasks: draft.subtasks.filter((_, j) => j !== i) })}>×</button>
+                    onClick={() => set({ subtasks: draft.subtasks.filter((_, j) => j !== i) })}><IconClose size={16} /></button>
                 </div>
               ))}
             </div>
@@ -99,19 +104,19 @@ export default function TaskEditor() {
               <input ref={newSubInput} className="input" type="text" placeholder="Add a subtask and press Enter" aria-label="New subtask"
                 value={draft.newSub} onChange={e => set({ newSub: e.target.value })}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); addSub(); } }} />
-              <button className="ghost" type="button" onClick={addSub}>Add</button>
+              <button className="ghost" type="button" onClick={addSub}><IconPlus size={16} />Add</button>
             </div>
           </div>
           <div className="field">
-            <span className="fieldset-label">Status</span>
+            <span className="fieldset-label"><IconDone size={14} />Status</span>
             <div className="radios">
               {STATUSES.map(s => (
-                <label key={s.id}><input type="radio" name="editStatus" value={s.id} checked={draft.status === s.id} onChange={() => set({ status: s.id })} />{s.name}</label>
+                <label key={s.id}><input type="radio" name="editStatus" value={s.id} checked={draft.status === s.id} onChange={() => set({ status: s.id })} /><StatusIcon id={s.id} />{s.name}</label>
               ))}
             </div>
           </div>
           <div className="field">
-            <span className="fieldset-label">Priority</span>
+            <span className="fieldset-label"><IconFlag size={14} />Priority</span>
             <div className="radios">
               {[{ id: '' as const, name: 'None' }, ...PRIORITIES].map(p => (
                 <label key={p.id}><input type="radio" name="editPriority" value={p.id} checked={draft.priority === p.id} onChange={() => set({ priority: p.id })} />{p.name}</label>
@@ -120,18 +125,18 @@ export default function TaskEditor() {
           </div>
           <ProjectSelect value={draft.project} onChange={id => set({ project: id })} />
           <div className="two">
-            <label className="field"><span>Day</span>
-              <input className="input" type="date" required value={draft.day} onChange={e => set({ day: e.target.value })} />
-            </label>
-            <label className="field"><span>Deadline</span>
-              <input className="input" type="date" value={draft.deadline} onChange={e => set({ deadline: e.target.value })} />
-            </label>
+            <div className="field"><span id="editDayLbl"><IconCalendar size={14} />Day</span>
+              <DatePicker value={draft.day} onChange={v => set({ day: v })} labelledBy="editDayLbl" clearable={false} />
+            </div>
+            <div className="field"><span id="editDeadlineLbl"><IconClock size={14} />Deadline</span>
+              <DatePicker value={draft.deadline} onChange={v => set({ deadline: v })} labelledBy="editDeadlineLbl" placeholder="No deadline" />
+            </div>
           </div>
           <div className="dlg-foot">
-            <button className={'danger' + (armed ? ' armed' : '')} type="button" onClick={del}>{armed ? 'Confirm delete' : 'Delete'}</button>
+            <button className={'danger' + (armed ? ' armed' : '')} type="button" onClick={del}><IconTrash size={16} />{armed ? 'Confirm delete' : 'Delete'}</button>
             <div>
               <button className="ghost" type="button" onClick={close}>Cancel</button>
-              <button className="primary" type="submit">Save</button>
+              <button className="primary" type="submit"><IconSave size={16} />Save</button>
             </div>
           </div>
         </form>
