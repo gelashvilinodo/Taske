@@ -61,31 +61,80 @@ export default function WeekBoard() {
   // A week change we made ourselves while sliding: keep the strip and the scroll where they are.
   const ownWeek = useRef<string | null>(null);
 
-  // When the week scrolls sideways (below very wide screens), open on today, or on Monday for other weeks.
+  // The days of the previous render, so a week change knows which day was in view.
+  const lastDays = useRef<Date[] | null>(null);
+  // A slide to another week started by the week switcher (not by a drag) is under way.
+  const navSlide = useRef(0);
+  const navSliding = useRef(false);
+
+  // On a new week, open on today, or on Monday for other weeks. Coming from a nearby week the days
+  // slide there: the old and new weeks join one strip, it scrolls across, then folds back to one week.
   const weekKey = iso(weekStart);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (ownWeek.current === weekKey) { ownWeek.current = null; return; }
     ownWeek.current = null;
-    setExtra(x => (x.before || x.after ? { before: 0, after: 0 } : x));
+    const token = ++navSlide.current;
+    navSliding.current = false;
     const el = board.current;
-    if (!el || el.scrollWidth <= el.clientWidth + 1) { setShown(0); return; }
+    if (el) el.style.scrollSnapType = '';
     let i = Math.max(0, weekDays(weekStart).findIndex(d => iso(d) === td));
     // Several days fit at once (laptops): stay on Monday while today is already in view, so the weekdays lead.
-    const col = cols(el)[i];
-    if (col && leftOf(el, col) + col.offsetWidth <= el.clientWidth) i = 0;
+    if (el && i < fits(el)) i = 0;
+    const target = iso(addDays(weekStart, i));
+
+    const seen = lastDays.current?.[shownRef.current];
+    const weeks = seen ? Math.round((weekStart.getTime() - mondayOf(seen).getTime()) / (7 * 864e5)) : 0;
+    const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (el && seen && weeks && Math.abs(weeks) <= 3 && !drag && !still) {
+      navSliding.current = true;
+      // Snapping off while sliding: otherwise the browser re-snaps to the new week's Monday the
+      // moment the strip forms, and the slide is skipped.
+      el.style.scrollSnapType = 'none';
+      const next = weeks > 0 ? { before: weeks, after: 0 } : { before: 0, after: -weeks };
+      anchor.current = { day: iso(seen) };
+      extraRef.current = next;
+      setExtra(next);
+      requestAnimationFrame(() => {
+        if (navSlide.current !== token) return;
+        const list = daysRef.current;
+        if (anchor.current) { anchor.current = null; goTo(list.findIndex(d => iso(d) === iso(seen)), false); }
+        goTo(list.findIndex(d => iso(d) === target));
+        let t = 0;
+        const fold = () => {
+          clearTimeout(t);
+          el.removeEventListener('scrollend', fold);
+          if (navSlide.current !== token) return;
+          navSliding.current = false;
+          el.style.scrollSnapType = '';
+          anchor.current = { day: target };
+          extraRef.current = { before: 0, after: 0 };
+          setExtra({ before: 0, after: 0 });
+        };
+        el.addEventListener('scrollend', fold);
+        t = window.setTimeout(fold, 1100); // browsers without `scrollend`
+      });
+      return;
+    }
+
+    setExtra(x => (x.before || x.after ? { before: 0, after: 0 } : x));
+    if (!el || el.scrollWidth <= el.clientWidth + 1) { setShown(0); return; }
     goTo(i, false);
     setShown(i);
-  }, [weekKey]);
+  }, [weekKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => { lastDays.current = daysRef.current; });
 
   // The strip grew or shrank at its start: keep the same day in view, then slide on if asked to.
   const anchor = useRef<{ day: string; then?: string } | null>(null);
   const stripKey = iso(stripStart) + '/' + days.length;
   useLayoutEffect(() => {
     const a = anchor.current;
-    anchor.current = null;
     if (!a) return;
     const at = daysRef.current.findIndex(d => iso(d) === a.day);
-    if (at >= 0) { goTo(at, false); setShown(at); }
+    // Not in the strip yet (a week change renders once before its strip forms): wait for it.
+    if (at < 0) return;
+    anchor.current = null;
+    goTo(at, false);
+    setShown(at);
     if (a.then) {
       const to = daysRef.current.findIndex(d => iso(d) === a.then);
       if (to >= 0) requestAnimationFrame(() => goTo(to));
@@ -166,7 +215,7 @@ export default function WeekBoard() {
     if (dragging) return;
     const dropped = droppedOn.current;
     droppedOn.current = null;
-    if (!strip) return;
+    if (!strip || navSliding.current) return; // a week-switcher slide folds the strip itself
     const el = board.current;
     if (!el) return;
     const list = daysRef.current;

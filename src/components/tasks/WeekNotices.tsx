@@ -1,20 +1,17 @@
 'use client';
 
 import { iso, planningMonday, today, weekEnd } from '@/lib/dates';
-import { closed, inWeek } from '@/lib/tasks/model';
+import { closed } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { IconToday } from '@/components/shell/icons';
 
-/** Status line (loading, empty week, connection) and the "carry unfinished tasks" prompt. */
+/** Status line (loading, connection) and the "carry unfinished tasks" prompt. */
 export default function WeekNotices() {
   const { tasks, loaded, conn, readOnly, weekStart, patchTask } = useWorkspace();
 
   let msg = '';
   if (conn === 'bad') msg = 'Connection lost. Reload the page to see the latest changes.';
   else if (!loaded) msg = 'Loading tasks.';
-  else if (!tasks.some(t => inWeek(t, weekStart))) {
-    msg = readOnly ? 'No tasks this week yet.' : 'No tasks this week yet. Add the first one above, or paste a list with one task per line.';
-  }
 
   const monIso = iso(weekStart);
   const showCarry = !readOnly && monIso === iso(planningMonday());

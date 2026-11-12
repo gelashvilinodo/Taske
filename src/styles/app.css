@@ -311,7 +311,30 @@ body:has(.shell) { background: transparent; }
 .nav .icon-btn { border-radius: 50%; width: var(--control-md); min-height: var(--control-md); border-color: transparent; background: transparent; box-shadow: none; }
 .nav .icon-btn:hover { background: var(--panel-bg-hover); }
 .nav .ghost { border-radius: var(--radius-pill); min-height: var(--control-md); padding-inline: var(--space-4); }
-.period { min-width: 0; padding-inline: var(--space-2); text-align: center; }
+/* The title cells stack in one grid cell so the outgoing and incoming titles can slide past
+   each other. On desktop it keeps one fixed width, wide enough for a week that spans two
+   months ("28 September – 4 October"), so the arrows don't jump between weeks. */
+.period {
+  display: grid; min-width: 0; width: 17.5rem;
+  padding-inline: var(--space-2); text-align: center;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--space-3), #000 calc(100% - var(--space-3)), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 var(--space-3), #000 calc(100% - var(--space-3)), transparent);
+}
+.period-slide { grid-area: 1 / 1; min-width: 0; }
+.period-short { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .period-slide.is-in.is-next  { animation: period-in-next .32s cubic-bezier(.2, .8, .2, 1) both; }
+  .period-slide.is-in.is-prev  { animation: period-in-prev .32s cubic-bezier(.2, .8, .2, 1) both; }
+  .period-slide.is-out.is-next { animation: period-out-next .32s cubic-bezier(.2, .8, .2, 1) both; }
+  .period-slide.is-out.is-prev { animation: period-out-prev .32s cubic-bezier(.2, .8, .2, 1) both; }
+}
+.period-slide.is-out { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .period-slide.is-out { display: none; } }
+@keyframes period-in-next  { from { transform: translateX(60%);  opacity: 0; } }
+@keyframes period-in-prev  { from { transform: translateX(-60%); opacity: 0; } }
+@keyframes period-out-next { to   { transform: translateX(-60%); opacity: 0; } }
+@keyframes period-out-prev { to   { transform: translateX(60%);  opacity: 0; } }
 .eyebrow {
   display: block;
   font: var(--weight-medium) var(--text-2xs) / var(--leading-tight) var(--font-data);
@@ -483,14 +506,28 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
 }
 .notice.warn .ghost { background: transparent; border-color: currentColor; color: inherit; }
 
-/* Project filters: chips inside one pill */
+/* Project filters: chips inside one pill. The pill takes at most half the toolbar; with more
+   projects than fit, it scrolls sideways and fades out at the edge that hides pills. */
 .filters {
-  display: flex; gap: var(--space-0-5); flex-wrap: wrap;
+  position: relative; isolation: isolate;
+  display: flex; gap: var(--space-0-5); flex-wrap: nowrap;
+  min-width: 0; max-width: 50%;
   padding: var(--space-1);
+  overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
   background: var(--panel-bg); border: var(--border-width) solid var(--panel-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--glass-highlight);
+  --fade-s: 0px; --fade-e: 0px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fade-s), #000 calc(100% - var(--fade-e)), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 var(--fade-s), #000 calc(100% - var(--fade-e)), transparent);
 }
+.filters::-webkit-scrollbar { display: none; }
+.filters.fade-start { --fade-s: var(--space-8); }
+.filters.fade-end { --fade-e: var(--space-8); }
+.filters > .filter { flex: none; position: relative; z-index: 1; transition: color var(--dur) var(--ease); }
+/* The sliding thumb paints the picked pill, so the pill itself stays clear */
+.filters.has-thumb > .filter[aria-pressed="true"] { background: transparent; box-shadow: none; }
+.filters > .seg-thumb { bottom: auto; }
 .filter {
   display: inline-flex; align-items: center; gap: var(--space-1-5);
   min-height: var(--control-sm);
@@ -1444,14 +1481,16 @@ dialog.gate { --dialog-w: 440px; }
   .toolbar { flex-direction: column; align-items: stretch; flex-wrap: nowrap; }
   .nav { display: flex; }
   .nav-left { width: 100%; flex-wrap: nowrap; }
-  .period { flex: 1; }
+  .period { flex: 1; width: auto; }
+  /* Phone: months shortened to three letters ("26 Oct – 1 Nov") so a two-month week fits */
+  .period-full { display: none; }
+  .period-short { display: inline; }
 
   .add-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .add-meta > :last-child { grid-column: 1 / -1; }
   .details-row { grid-template-columns: minmax(0, 1fr); }
 
-  .filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  .filter { flex: none; }
+  .filters { max-width: none; }
   .stats { gap: var(--space-2); }
   .stat { padding: var(--space-3); column-gap: var(--space-2-5); border-radius: var(--radius-lg); }
   .stat-icon { width: 36px; height: 36px; }
