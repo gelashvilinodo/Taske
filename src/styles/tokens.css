@@ -96,7 +96,7 @@
   --glass-blur: 16px;
   --glass-saturate: 190%;
   --glass-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  --glass-bg: light-dark(rgb(255 255 255 / .40), rgb(26 24 38 / .42));
+  --glass-bg: light-dark(rgb(255 255 255 / .26), rgb(26 24 38 / .28));
   --glass-bg-soft: light-dark(rgb(255 255 255 / .34), rgb(255 255 255 / .035));
   --glass-bg-strong: light-dark(rgb(252 251 248 / .86), rgb(22 21 32 / .86));
   --glass-border: light-dark(rgb(255 255 255 / .85), rgb(255 255 255 / .14));
@@ -124,9 +124,9 @@
     inset 0 -2px 0 rgb(30 0 90 / .30),
     0 1px 2px rgb(40 0 110 / .25);
   /* The big app window and the light panels inside it (panels do not blur) */
-  --window-bg: light-dark(rgb(255 255 255 / .30), rgb(24 22 34 / .45));
-  --panel-bg: light-dark(rgb(255 255 255 / .55), rgb(255 255 255 / .045));
-  --panel-bg-hover: light-dark(rgb(255 255 255 / .8), rgb(255 255 255 / .09));
+  --window-bg: light-dark(rgb(255 255 255 / .18), rgb(24 22 34 / .30));
+  --panel-bg: light-dark(rgb(255 255 255 / .40), rgb(255 255 255 / .035));
+  --panel-bg-hover: light-dark(rgb(255 255 255 / .65), rgb(255 255 255 / .08));
   /* In light mode a white border on a white panel reads as a flat line, so it gets a
      faint purple tint; the white top edge comes from the highlight instead. */
   --panel-border: light-dark(rgb(110 80 190 / .16), rgb(255 255 255 / .08));
