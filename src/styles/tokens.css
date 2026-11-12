@@ -89,16 +89,8 @@
      Text on a project tint is mixed toward the ink so it stays readable in both themes. */
   --pj-ink-mix: 38%;
 
-  /* Page backdrop: a few saturated colour blobs behind the glass. Blur only shows
-     where there is colour and contrast to blur, so the blobs are smaller and stronger
-     than a plain wash, and some sit under the rail and the window edges. */
-  --backdrop:
-    radial-gradient(28vmax 28vmax at 6% 12%, rgb(138 77 250 / .55), transparent 70%),
-    radial-gradient(24vmax 22vmax at 92% 8%, light-dark(rgb(255 122 196 / .45), rgb(214 51 160 / .40)), transparent 70%),
-    radial-gradient(30vmax 26vmax at 88% 78%, light-dark(rgb(92 156 255 / .42), rgb(37 99 235 / .38)), transparent 70%),
-    radial-gradient(26vmax 24vmax at 22% 96%, light-dark(rgb(163 116 255 / .50), rgb(88 20 199 / .50)), transparent 70%),
-    radial-gradient(18vmax 16vmax at 52% 42%, light-dark(rgb(255 196 140 / .30), rgb(111 36 234 / .25)), transparent 70%),
-    light-dark(var(--pearl-100), var(--jet-900));
+  /* Page backdrop (--backdrop) is defined below the :root block, so its moving
+     blob positions are worked out on the layers that paint it. */
 
   /* ---------- Glass ---------- */
   --glass-blur: 16px;
@@ -245,6 +237,33 @@
   --z-menu: 30;
 
   color-scheme: light dark;
+}
+
+/* ---------- Page backdrop ----------
+   A few saturated colour blobs behind the glass. Blur only shows where there is colour
+   and contrast to blur, so the blobs are small and strong, and some sit under the rail
+   and the window edges. Each blob's centre is a registered property (--bNx / --bNy) so
+   app.css can drift it slowly; --backdrop is declared on the painting layers themselves
+   (body::before / ::after) so it picks up their animated positions, not the root's. */
+@property --b1x { syntax: "<percentage>"; inherits: false; initial-value: 6%; }
+@property --b1y { syntax: "<percentage>"; inherits: false; initial-value: 12%; }
+@property --b2x { syntax: "<percentage>"; inherits: false; initial-value: 92%; }
+@property --b2y { syntax: "<percentage>"; inherits: false; initial-value: 8%; }
+@property --b3x { syntax: "<percentage>"; inherits: false; initial-value: 88%; }
+@property --b3y { syntax: "<percentage>"; inherits: false; initial-value: 78%; }
+@property --b4x { syntax: "<percentage>"; inherits: false; initial-value: 22%; }
+@property --b4y { syntax: "<percentage>"; inherits: false; initial-value: 96%; }
+@property --b5x { syntax: "<percentage>"; inherits: false; initial-value: 52%; }
+@property --b5y { syntax: "<percentage>"; inherits: false; initial-value: 42%; }
+
+:root, body::before, body::after {
+  --backdrop:
+    radial-gradient(28vmax 28vmax at var(--b1x) var(--b1y), rgb(138 77 250 / .55), transparent 70%),
+    radial-gradient(24vmax 22vmax at var(--b2x) var(--b2y), light-dark(rgb(255 122 196 / .45), rgb(214 51 160 / .40)), transparent 70%),
+    radial-gradient(30vmax 26vmax at var(--b3x) var(--b3y), light-dark(rgb(92 156 255 / .42), rgb(37 99 235 / .38)), transparent 70%),
+    radial-gradient(26vmax 24vmax at var(--b4x) var(--b4y), light-dark(rgb(163 116 255 / .50), rgb(88 20 199 / .50)), transparent 70%),
+    radial-gradient(18vmax 16vmax at var(--b5x) var(--b5y), light-dark(rgb(255 196 140 / .30), rgb(111 36 234 / .25)), transparent 70%),
+    light-dark(var(--pearl-100), var(--jet-900));
 }
 
 /* Theme selection: host theme, then the app's own Day / Night switch */
