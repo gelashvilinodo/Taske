@@ -53,11 +53,11 @@ body::after {
 @media (prefers-reduced-motion: no-preference) {
   body::before, body::after {
     animation:
-      drift-1 47s ease-in-out infinite alternate,
-      drift-2 59s ease-in-out infinite alternate,
-      drift-3 53s ease-in-out infinite alternate,
-      drift-4 41s ease-in-out infinite alternate,
-      drift-5 67s ease-in-out infinite alternate;
+      drift-1 22s ease-in-out infinite alternate,
+      drift-2 28s ease-in-out infinite alternate,
+      drift-3 25s ease-in-out infinite alternate,
+      drift-4 19s ease-in-out infinite alternate,
+      drift-5 31s ease-in-out infinite alternate;
   }
 }
 @keyframes drift-1 { 33% { --b1x: 22%; --b1y: 30%; } 66% { --b1x: 4%;  --b1y: 48%; } 100% { --b1x: 30%; --b1y: 6%;  } }
