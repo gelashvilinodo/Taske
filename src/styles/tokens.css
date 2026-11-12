@@ -101,7 +101,7 @@
     light-dark(var(--pearl-100), var(--jet-900));
 
   /* ---------- Glass ---------- */
-  --glass-blur: 28px;
+  --glass-blur: 16px;
   --glass-saturate: 190%;
   --glass-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   --glass-bg: light-dark(rgb(255 255 255 / .40), rgb(26 24 38 / .42));
