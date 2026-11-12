@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { addDays, commentTime, DAYS_S, iso, parse, shortDate, today, weekday } from '@/lib/dates';
-import { closed, PRIORITIES, prioName, STATUSES, statusName, subProgress, type Task } from '@/lib/tasks/model';
+import { closed, PRIORITIES, prioName, STATUSES, statusName, statusPatch, subProgress, subtasksPatch, type Task } from '@/lib/tasks/model';
 import { ProjectChip, projectStyle } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
-import { IconCalendar, IconChevronDown, IconChevronRight, IconClock, IconComment, IconFlag, IconSend, IconSubtasks } from '@/components/shell/icons';
+import { IconCalendar, IconClock, IconComment, IconFlag, IconSend, IconSubtasks } from '@/components/shell/icons';
 import MenuButton from './MenuButton';
-import { useTaskDrag } from './TaskDrag';
+import { useTaskDragSource } from './TaskDrag';
 import SubtaskGate, { hasOpenSubs } from './SubtaskGate';
 import SubtaskList from './SubtaskList';
 
@@ -35,18 +35,18 @@ function Description({ text }: { text: string }) {
   );
 }
 
-function Subtasks({ t, writable }: { t: Task; writable: boolean }) {
+function Subtasks({ t, writable, controls }: { t: Task; writable: boolean; controls: boolean }) {
   const { patchTask } = useWorkspace();
-  const [open, setOpen] = useState(false);
   if (!t.subtasks.length) return null;
   const { done, total } = subProgress(t.subtasks);
+  // The whole list always shows on the card; clicking a subtask opens its status menu.
   return (
     <>
-      <button className="sub-toggle" type="button" aria-expanded={open} onClick={() => setOpen(o => !o)}>
-        <IconSubtasks size={14} /><span>Subtasks</span><b>{done}/{total}</b>{open ? <IconChevronDown size={13} /> : <IconChevronRight size={13} />}
+      <div className="sub-head">
+        <IconSubtasks size={14} /><span>Subtasks</span><b>{done}/{total}</b>
         <span className="meter"><i style={{ width: (total ? Math.round(done / total * 100) : 100) + '%' }} /></span>
-      </button>
-      {open && <SubtaskList subs={t.subtasks} onChange={writable ? subtasks => patchTask(t.id, { subtasks }) : undefined} />}
+      </div>
+      <SubtaskList subs={t.subtasks} pick onChange={controls ? subtasks => { if (writable) patchTask(t.id, subtasksPatch(t, subtasks)); } : undefined} />
     </>
   );
 }
@@ -97,11 +97,14 @@ export function Comments({ t, writable, focusSignal }: { t: Task; writable: bool
 export { DeadlineChip };
 
 /** One task on the board. `showDay` adds the day chip (used where cards are not grouped by day). */
-export default function TaskCard({ t, showDay = false, ghost = false }: { t: Task; showDay?: boolean; ghost?: boolean }) {
+function TaskCard({ t, showDay = false, ghost = false }: { t: Task; showDay?: boolean; ghost?: boolean }) {
   const { readOnly, patchTask, openPreview, comments, projectById } = useWorkspace();
-  const { drag, begin } = useTaskDrag();
+  const { dragId, begin } = useTaskDragSource();
   const writable = !readOnly && !ghost;
-  const lifted = !ghost && drag?.id === t.id;
+  // The dragged copy (ghost) is drawn with exactly the same buttons as the card it was lifted from, so
+  // nothing in it moves; it just can't be used (the ghost is inert and ignores the pointer).
+  const controls = !readOnly;
+  const lifted = !ghost && dragId === t.id;
   const project = projectById(t.project);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentsShown, setCommentsShown] = useState(false); // stays true while the panel animates shut
@@ -110,10 +113,10 @@ export default function TaskCard({ t, showDay = false, ghost = false }: { t: Tas
   const n = (comments[t.id] || []).length;
   const d = parse(t.day);
 
-  // Once closed, keep the panel mounted for its slide-shut animation (--dur, 200ms), then drop it.
+  // Once closed, keep the panel mounted for its slide-shut animation (240ms), then drop it.
   useEffect(() => {
     if (commentsOpen || !commentsShown) return;
-    const t = setTimeout(() => setCommentsShown(false), 220);
+    const t = setTimeout(() => setCommentsShown(false), 260);
     return () => clearTimeout(t);
   }, [commentsOpen, commentsShown]);
   const openComments = () => { setCommentsOpen(true); setCommentsShown(true); setFocusSignal(x => x + 1); };
@@ -129,42 +132,42 @@ export default function TaskCard({ t, showDay = false, ghost = false }: { t: Tas
         ? <span className="card-title">{t.title}</span>
         : <button className="card-title" type="button" onClick={() => openPreview(t.id)}>{t.title}</button>}
       <Description text={t.description} />
-      <Subtasks t={t} writable={writable} />
+      <Subtasks t={t} writable={writable} controls={controls} />
       <div className="meta">
         <ProjectChip project={project} />
         {showDay && <span className="chip chip-ic"><IconCalendar size={13} />{DAYS_S[weekday(d)]}, {shortDate(d)}</span>}
         <DeadlineChip t={t} />
       </div>
       <div className="card-foot">
-        {writable ? (
+        {controls ? (
           <MenuButton className={'status s-' + t.status} title="Change status" ariaLabel={'Status: ' + statusName(t.status) + '. Click to change'}
             items={STATUSES} current={t.status}
             onPick={id => {
+              if (!writable) return;
               if (id === 'done' && hasOpenSubs(t.subtasks)) { setGate(true); return; }
-              if (id === 'done') openComments();
-              patchTask(t.id, { status: id as Task['status'] });
+              patchTask(t.id, statusPatch(t, id as Task['status']));
             }}>
             {statusName(t.status)}
           </MenuButton>
         ) : <span className={'status s-' + t.status}>{statusName(t.status)}</span>}
-        {writable ? (
+        {controls ? (
           <MenuButton className={'prio ' + (t.priority ? 'pr-' + t.priority : 'none')} title="Change priority"
             ariaLabel={'Priority: ' + (t.priority ? prioName(t.priority) : 'none') + '. Click to change'}
             items={[...PRIORITIES, { id: '', name: 'No priority' }]} current={t.priority}
-            onPick={id => patchTask(t.id, { priority: id as Task['priority'] })}>
+            onPick={id => { if (writable) patchTask(t.id, { priority: id as Task['priority'] }); }}>
             <IconFlag size={14} />{t.priority ? prioName(t.priority) : 'Priority'}
           </MenuButton>
         ) : t.priority ? <span className={'prio pr-' + t.priority}><IconFlag size={14} />{prioName(t.priority)}</span> : null}
-        {(writable || n > 0) && (
+        {(controls || n > 0) && (
           <button className={'cmt-btn' + (n ? ' has' : '')} type="button" aria-expanded={commentsOpen}
-            onClick={() => (commentsOpen ? setCommentsOpen(false) : openComments())}>
+            onClick={ghost ? undefined : () => (commentsOpen ? setCommentsOpen(false) : openComments())}>
             <IconComment size={14} />{n ? 'Comments ' + n : 'Comment'}
           </button>
         )}
       </div>
       {gate && (
         <SubtaskGate subtasks={t.subtasks} onCancel={() => setGate(false)}
-          onConfirm={subtasks => { setGate(false); openComments(); patchTask(t.id, { status: 'done', subtasks }); }} />
+          onConfirm={subtasks => { setGate(false); patchTask(t.id, { status: 'done', subtasks }); }} />
       )}
       {commentsShown && (
         // Slides open (and shut) by animating its height; unmounts once it has closed.
@@ -175,3 +178,6 @@ export default function TaskCard({ t, showDay = false, ghost = false }: { t: Tas
     </article>
   );
 }
+
+// Memoised: while a card is dragged, the columns re-render to move the gap, but the cards in them don't need to.
+export default memo(TaskCard);

@@ -3,6 +3,7 @@
 import { PRIORITIES, prioName, sortSubs, STATUSES, statusName, subClosed, toggledSub, type PriorityId, type StatusId, type Subtask } from '@/lib/tasks/model';
 import { IconFlag } from '@/components/shell/icons';
 import MenuButton from './MenuButton';
+import { SubMark } from './StatusIcon';
 
 /**
  * Round checkbox for a subtask. Its colour and mark follow the status:
@@ -17,12 +18,7 @@ export function SubCheck({ status, onToggle, disabled = false }: { status: Statu
       aria-label={closedNow ? statusName(status) + '. Click to reopen' : statusName(status) + '. Click to mark done'}
       title={statusName(status)}
       onClick={onToggle}>
-      {status === 'done' && (
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 8.4 7 10.8l4.6-5.3" /></svg>
-      )}
-      {status === 'canceled' && (
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" /></svg>
-      )}
+      <SubMark status={status} />
     </button>
   );
 }
@@ -64,13 +60,30 @@ export const SubPrioFlag = ({ priority, label = false }: { priority: PriorityId;
  * `menus` adds priority and status pills to each row (used in the roomy preview window);
  * without it a row shows just a small priority flag.
  */
-export default function SubtaskList({ subs, onChange, menus = false, className = 'sub-list' }: {
+export default function SubtaskList({ subs, onChange, menus = false, pick = false, className = 'sub-list' }: {
   subs: Subtask[];
   onChange?: (subs: Subtask[]) => void;
   menus?: boolean;
+  /** Compact card rows where the whole row is a button that opens the subtask's status menu. */
+  pick?: boolean;
   className?: string;
 }) {
   const put = (next: Subtask) => onChange?.(subs.map(x => (x.id === next.id ? next : x)));
+  if (pick && onChange) return (
+    <ul className={className}>
+      {sortSubs(subs).map(s => (
+        <li key={s.id} className={'sub-item s-' + s.status + (subClosed(s) ? ' is-done' : '')}>
+          <MenuButton className="sub-pick" title="Change subtask status"
+            ariaLabel={s.title + '. Status: ' + statusName(s.status) + '. Click to change'}
+            items={STATUSES} current={s.status} onPick={id => put({ ...s, status: id as StatusId })}>
+            <span className={'sub-check s-' + s.status} aria-hidden="true"><SubMark status={s.status} /></span>
+            <span className="sub-title">{s.title}</span>
+            <SubPrioFlag priority={s.priority} />
+          </MenuButton>
+        </li>
+      ))}
+    </ul>
+  );
   return (
     <ul className={className}>
       {sortSubs(subs).map(s => (

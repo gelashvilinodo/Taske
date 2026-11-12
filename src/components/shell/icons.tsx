@@ -8,8 +8,8 @@ import {
   Add01Icon, Alert02Icon, ArrowDown01Icon, ArrowDown02Icon, ArrowLeft01Icon, ArrowRight01Icon, ArrowUp01Icon,
   ArrowUp02Icon, BubbleChatIcon, Calendar03Icon, CalendarCheckIn01Icon, Cancel01Icon, CheckmarkCircle02Icon,
   CircleIcon, Clock01Icon, ComputerIcon, Delete02Icon, Flag02Icon, Folder01Icon, FolderAddIcon, ImageUpload01Icon, KanbanIcon,
-  LeftToRightListBulletIcon, Login03Icon, Logout03Icon, Mail01Icon, Menu01Icon, MinusSignIcon, Moon02Icon, PencilEdit01Icon,
-  Progress02Icon, SentIcon, Settings01Icon, Sun03Icon, Table01Icon, TaskAdd01Icon, TaskDone01Icon, TextAlignLeftIcon, Tick02Icon,
+  LeftToRightListBulletIcon, Login03Icon, Logout03Icon, Mail01Icon, Menu01Icon, MinusSignIcon, Moon02Icon, Notification01Icon, PencilEdit01Icon,
+  Progress02Icon, SentIcon, Settings01Icon, SheetIcon, Sun03Icon, TaskAdd01Icon, TaskDone01Icon, TextAlignLeftIcon, Tick02Icon, Upload01Icon,
 } from '@hugeicons/core-free-icons';
 
 type Glyph = Parameters<typeof HugeiconsIcon>[0]['icon'];
@@ -28,12 +28,13 @@ export const IconBoard = make(KanbanIcon);
 export const IconList = make(LeftToRightListBulletIcon);
 export const IconCalendar = make(Calendar03Icon);
 export const IconClock = make(Clock01Icon);
-export const IconTable = make(Table01Icon);
+export const IconTable = make(SheetIcon); // a spreadsheet grid (Table01Icon is a piece of furniture)
 export const IconFolder = make(Folder01Icon);
 export const IconSun = make(Sun03Icon);
 export const IconMoon = make(Moon02Icon);
 export const IconLogout = make(Logout03Icon);
 export const IconSettings = make(Settings01Icon);
+export const IconBell = make(Notification01Icon);
 export const IconComputer = make(ComputerIcon);
 export const IconPlus = make(Add01Icon);
 export const IconChevronUp = make(ArrowUp01Icon);
@@ -70,3 +71,5 @@ export const IconUpload = make(ImageUpload01Icon);
 export const IconMail = make(Mail01Icon);
 export const IconLogin = make(Login03Icon);
 export const IconTaskAdd = make(TaskAdd01Icon);
+/** iPhone "Share" button, for the Add to Home Screen hint */
+export const IconShare = make(Upload01Icon);

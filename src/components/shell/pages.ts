@@ -1,4 +1,4 @@
-import { IconBoard, IconCalendar, IconClock, IconFolder, IconList, IconSettings, IconTable } from './icons';
+import { IconBell, IconBoard, IconCalendar, IconClock, IconFolder, IconList, IconSettings, IconTable } from './icons';
 
 /** Workspace pages, in sidebar order. `hint` is the line under the page title. */
 export const PAGES = [
@@ -8,6 +8,7 @@ export const PAGES = [
   { href: '/content-calendar', label: 'Content calendar', hint: 'Posts and publishing by the hour', Icon: IconClock },
   { href: '/table', label: 'Table', hint: 'Every task in one sortable list', Icon: IconTable },
   { href: '/projects', label: 'Projects', hint: 'Your projects, their colours and logos', Icon: IconFolder },
+  { href: '/notifications', label: 'Notifications', hint: 'Overdue tasks and alerts on your devices', Icon: IconBell },
   // Sits at the foot of the rail on desktop (see .rail-settings); in the burger menu on phones
   { href: '/settings', label: 'Settings', hint: 'Appearance and preferences', Icon: IconSettings },
 ];

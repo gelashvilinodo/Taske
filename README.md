@@ -27,6 +27,9 @@ src/
       calendar/           month overview (Google / Apple sync comes later)
       content-calendar/   hour-by-hour content plan (placeholder)
       table/              all tasks, sortable
+      notifications/      overdue-task notifications and the "turn on notifications" prompt
+    api/push/             push: public key, save a device, send a test
+    api/cron/overdue/     the 15-minute overdue job (called by worker.ts)
     login/                Apple, Google and email-code sign-in
     auth/callback/        OAuth return route
   components/
@@ -65,3 +68,16 @@ npm run deploy
 ```
 
 `NEXT_PUBLIC_SUPABASE_*` values are baked in at build time, so deploy from a machine that has `.env.local` filled in, and redeploy after changing them.
+
+## Notifications (push)
+
+Overdue tasks become notifications on the Notifications page and a push on every device where they were turned on
+(laptop browsers, Android, and iPhone once Taske is added to the Home Screen). With Taske open, the app plays its own
+sound instead of a system banner (`public/sw.js`).
+
+- Database: run `supabase/migrations/20261112200000_notifications.sql` in the Supabase SQL Editor.
+- `worker.ts` wraps the OpenNext worker and runs `/api/cron/overdue` every 15 minutes (`triggers.crons` in `wrangler.jsonc`).
+  A task counts as overdue the day after its deadline, from 09:00 in the device's time zone.
+- Keys: `VAPID_PUBLIC_KEY` is in `wrangler.jsonc`. Secrets (`npx wrangler secret put NAME`): `VAPID_PRIVATE_KEY`,
+  `SUPABASE_SECRET_KEY` (Supabase → Project Settings → API Keys), `CRON_SECRET` (any long random string).
+  New key pair: `node scripts/vapid-keys.mjs`.

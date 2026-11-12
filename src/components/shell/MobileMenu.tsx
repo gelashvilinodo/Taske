@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
+import { useNotifications } from '@/components/notifications/NotificationsProvider';
 import { IconClose, IconLogout } from './icons';
 import { PAGES, PHONE_PAGES } from './pages';
 
@@ -15,6 +16,7 @@ import { PAGES, PHONE_PAGES } from './pages';
  */
 export default function MobileMenu({ open, current, onClose }: { open: boolean; current: string; onClose: () => void }) {
   const { account, signOut } = useWorkspace();
+  const { unread } = useNotifications();
   const closeBtn = useRef<HTMLButtonElement>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -43,6 +45,7 @@ export default function MobileMenu({ open, current, onClose }: { open: boolean; 
             aria-current={current === href ? 'page' : undefined} onClick={onClose}>
             <span className="mmenu-icon"><Icon size={20} /></span>
             <span className="mmenu-text"><b>{label}</b><small>{hint}</small></span>
+            {href === '/notifications' && unread > 0 && <span className="count-badge is-inline">{unread > 9 ? '9+' : unread}</span>}
           </Link>
         ))}
       </nav>

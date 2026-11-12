@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { isDate } from '@/lib/dates';
-import { makeSubs, PRIORITIES, sortSubs, STATUSES, subClosed, toggledSub, type PriorityId, type StatusId, type Subtask } from '@/lib/tasks/model';
+import { cancelOpenSubs, makeSubs, PRIORITIES, sortSubs, STATUSES, subClosed, toggledSub, type PriorityId, type StatusId, type Subtask } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import ProjectSelect from '@/components/projects/ProjectSelect';
 import DatePicker from '@/components/ui/DatePicker';
@@ -71,7 +71,8 @@ export default function TaskEditor() {
       title: title.slice(0, 500),
       description: draft.description.trim().slice(0, 5000),
       priority: draft.priority,
-      subtasks,
+      // Canceling the task cancels its open subtasks too.
+      subtasks: draft.status === 'canceled' ? cancelOpenSubs(subtasks) : subtasks,
       project: projects.some(p => p.id === draft.project) ? draft.project : '',
       status: draft.status,
       day: draft.day,

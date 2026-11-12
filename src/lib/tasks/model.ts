@@ -105,11 +105,14 @@ export function cleanTask(id: string, d: Record<string, unknown>, fallbackDay: s
 export const byPosition = (a: Task, b: Task) => a.position - b.position || a.createdAt - b.createdAt;
 /** Rank of a priority: urgent 0, high 1, low 2, none 3. */
 export const prioRankOf = (t: Task) => prioRank[t.priority] ?? 3;
+/** Group of a card inside a day: open tasks by priority (0–3), then done and canceled ones by priority (4–7). */
+export const dayGroupOf = (t: Task) => (closed(t) ? 4 : 0) + prioRankOf(t);
 /**
- * Order inside a day column: urgent first, then high, then low, then no priority.
- * Within one priority the user's manual order holds, so a new task lands below the others with its flag.
+ * Order inside a day column: open tasks first (urgent, high, low, no priority), then done and canceled ones
+ * at the bottom in the same priority order. Within one group the user's manual order holds, so a new task
+ * lands below the others with its flag.
  */
-export const byDayOrder = (a: Task, b: Task) => prioRankOf(a) - prioRankOf(b) || byPosition(a, b);
+export const byDayOrder = (a: Task, b: Task) => dayGroupOf(a) - dayGroupOf(b) || byPosition(a, b);
 
 /** Position for a task dropped between `before` and `after` (either may be missing). */
 export function positionBetween(before: Task | undefined, after: Task | undefined): number {
@@ -136,6 +139,26 @@ export function subProgress(subs: Subtask[]) {
 }
 /** Ticking the round checkbox: open → done, finished → back to to do. */
 export const toggledSub = (s: Subtask): Subtask => ({ ...s, status: subClosed(s) ? 'todo' : 'done' });
+/**
+ * Patch for a task whose subtasks changed. If the task is Done or Canceled and one of its subtasks
+ * is moved to To do or In progress, the task itself goes back to In progress.
+ * Canceling (or finishing) a subtask leaves the task's status alone.
+ */
+export function subtasksPatch(t: Task, subtasks: Subtask[]): { subtasks: Subtask[]; status?: StatusId } {
+  if (!closed(t)) return { subtasks };
+  const before = new Map(t.subtasks.map(s => [s.id, s]));
+  const reopened = subtasks.some(s => {
+    const old = before.get(s.id);
+    return !!old && old.status !== s.status && !subClosed(s);
+  });
+  return reopened ? { subtasks, status: 'doing' } : { subtasks };
+}
+/** Subtasks still open (To do, In progress) become Canceled; finished ones stay Done. */
+export const cancelOpenSubs = (subs: Subtask[]): Subtask[] =>
+  subs.map(s => (subClosed(s) ? s : { ...s, status: 'canceled' as StatusId }));
+/** Patch for moving a task to a new status. Canceling a task cancels its open subtasks too. */
+export const statusPatch = (t: Task, status: StatusId): { status: StatusId; subtasks?: Subtask[] } =>
+  status === 'canceled' && t.subtasks.some(s => !subClosed(s)) ? { status, subtasks: cancelOpenSubs(t.subtasks) } : { status };
 const prioRank: Record<string, number> = { urgent: 0, high: 1, low: 2, '': 3 };
 export const closed = (t: Task) => t.status === 'done' || t.status === 'canceled';
 export function compareTasks(a: Task, b: Task) {

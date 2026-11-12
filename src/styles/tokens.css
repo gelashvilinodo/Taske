@@ -220,8 +220,8 @@
   --rail-w: 68px;
   --window-pad: clamp(16px, 2.2vw, 32px);
   --safe-top: env(safe-area-inset-top, 0px); /* status bar height in the iPhone home-screen app */
+  --vh-gap: 0px;                          /* screen height 100dvh misses (iOS 26 home-screen app bug); set in layout.tsx */
   --tabbar-h: 68px;                       /* phone bottom tab bar */
-  --tabbar-h-compact: 50px;               /* the same bar, shrunk while scrolling down */
   --drag-edge-w: clamp(48px, 4vw, 72px);  /* week-switch strip at each screen edge while dragging */
 
   /* ---------- Motion ---------- */

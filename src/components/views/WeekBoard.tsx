@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { addDays, DAYS, DAYS_S, iso, mondayOf, MONTHS_S, rangeLabel, shortDate, today, weekDays, weekEnd, weekday } from '@/lib/dates';
-import { byDayOrder, positionBetween, prioRankOf } from '@/lib/tasks/model';
+import { byDayOrder, dayGroupOf, positionBetween } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { useVisibleTasks } from '@/components/tasks/Filters';
 import { requestAddOnDay } from '@/components/tasks/AddTaskForm';
@@ -103,11 +103,11 @@ export default function WeekBoard() {
       const before = all.filter(t => t.day === ds).sort(byDayOrder);
       if (before.indexOf(moving) === index) return; // dropped where it was
     }
-    // Days are grouped by priority, so a card can only be reordered among cards with the same flag.
-    // A drop outside its group lands at the nearest end of that group.
-    const r = prioRankOf(moving);
-    const start = list.filter(t => prioRankOf(t) < r).length;
-    const end = start + list.filter(t => prioRankOf(t) === r).length;
+    // Days are grouped (open before done/canceled, then by priority), so a card can only be reordered among
+    // cards in its own group. A drop outside its group lands at the nearest end of that group.
+    const r = dayGroupOf(moving);
+    const start = list.filter(t => dayGroupOf(t) < r).length;
+    const end = start + list.filter(t => dayGroupOf(t) === r).length;
     const at = Math.min(Math.max(index, start), end);
     const prev = at > start ? list[at - 1] : undefined;
     const next = at < end ? list[at] : undefined;

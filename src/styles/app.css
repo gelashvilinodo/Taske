@@ -31,7 +31,7 @@ body {
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: 0 0 calc(-1 * var(--vh-gap)) 0; /* reaches the screen's bottom edge in the iPhone app too */
   z-index: -1;
   background: var(--backdrop);
   pointer-events: none;
@@ -46,10 +46,11 @@ body::after {
   z-index: var(--z-statusbar);
   background: var(--backdrop);
   background-size: 100vw 100vh;
-  box-shadow: 0 1px 0 var(--color-line), 0 8px 18px -10px rgb(0 0 0 / .45);
   pointer-events: none;
 }
-@media (display-mode: browser) { body::after { box-shadow: none; } }
+/* In the app itself the page never scrolls (only .page-scroll does, below the header),
+   so nothing can pass under the clock: leave the status bar clear over the backdrop. */
+body:has(.shell)::after { display: none; }
 
 /* The backdrop blobs wander. BackdropDrift.tsx picks a new random spot for each
    blob's x and y on its own timer and duration (--bNxd / --bNyd); both layers glide
@@ -110,14 +111,16 @@ body:has(.shell) { padding-bottom: max(var(--shell-pad), env(safe-area-inset-bot
   max-width: calc(var(--page-max) + var(--rail-w) + var(--shell-gap));
   margin-inline: auto;
   /* Exactly one screen tall: the page itself never scrolls, only .page-scroll does */
-  height: calc(100dvh - var(--shell-pad) - var(--safe-top) - max(var(--shell-pad), env(safe-area-inset-bottom, 0px)));
+  height: calc(100dvh + var(--vh-gap) - var(--shell-pad) - var(--safe-top) - max(var(--shell-pad), env(safe-area-inset-bottom, 0px)));
   grid-template-rows: minmax(0, 1fr);
 }
 html:has(.shell), body:has(.shell) { overflow: hidden; }
+/* iPhone app: the page itself is as tall as the screen, so nothing below it is left unpainted */
+html:has(.shell) { min-height: calc(100dvh + var(--vh-gap)); background: var(--color-bg); }
 
 .rail {
   position: sticky; top: calc(var(--shell-pad) + var(--safe-top));
-  height: calc(100dvh - 2 * var(--shell-pad) - var(--safe-top));
+  height: calc(100dvh + var(--vh-gap) - 2 * var(--shell-pad) - var(--safe-top));
   display: flex; flex-direction: column; align-items: center; gap: var(--space-4);
   padding: var(--space-3) 0;
   background: var(--window-bg);
@@ -607,9 +610,10 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
 /* ---------- Cards ---------- */
 .card {
   --pj: var(--color-line-strong);
-  display: grid; gap: var(--space-1-5);
+  --card-gap: var(--space-1-5); --card-pad-b: var(--space-2-5); /* read by the comments panel's open animation */
+  display: grid; gap: var(--card-gap);
   min-width: 0;
-  padding: var(--space-2-5) var(--space-3) var(--space-2-5) var(--space-3-5);
+  padding: var(--space-2-5) var(--space-3) var(--card-pad-b) var(--space-3-5);
   background: var(--color-card);
   border: var(--border-width) solid var(--panel-border);
   border-radius: var(--radius-lg);
@@ -644,8 +648,8 @@ article.card.is-drag-source { display: none; }
 }
 .drag-ghost .card {
   transform: rotate(-1.5deg) scale(1.03);
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+  /* Nearly solid instead of blurred glass: a blur that moves with the pointer has to be redrawn every frame */
+  background: light-dark(rgb(252 251 248 / .97), rgb(30 28 44 / .96));
   box-shadow: inset 3px 0 0 var(--pj), var(--glass-highlight), 0 22px 44px -14px rgb(0 0 0 / .55), var(--shadow-glow);
   animation: lift var(--dur) var(--ease-spring);
 }
@@ -657,6 +661,8 @@ article.card.is-drag-source { display: none; }
   transition: transform var(--land-ms, 240ms) var(--ease), box-shadow var(--land-ms, 240ms) var(--ease);
 }
 html.is-dragging-task, html.is-dragging-task * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
+/* No hover lift on the cards the dragged one passes over: it repaints them on every move */
+html.is-dragging-task .card:hover { transform: none; background: var(--color-card); box-shadow: inset 3px 0 0 var(--pj), var(--glass-highlight), var(--shadow-sm); }
 
 .card-title {
   all: unset; display: block;
@@ -798,6 +804,25 @@ span.prio.sub-prio { min-height: 0; padding: 0 3px; align-self: center; border: 
 /* Small status pill beside a subtask */
 .status.sub-status { min-height: 20px; padding: 0 var(--space-1-5) 0 var(--space-1); gap: var(--space-1); flex: none; font-size: var(--text-2xs); }
 .status.sub-status::before { width: 6px; height: 6px; }
+/* Subtasks on a card: a header with the count and meter, then every subtask as a row that opens its status menu */
+.sub-head {
+  display: flex; align-items: center; gap: var(--space-1-5);
+  font-size: var(--text-2xs); font-weight: var(--weight-medium); color: var(--color-muted);
+}
+.sub-head svg { flex: none; }
+.sub-head b { font: var(--weight-medium) var(--text-2xs) var(--font-data); font-variant-numeric: tabular-nums; }
+.sub-head .meter { flex: 1; width: auto; height: 4px; }
+.sub-pick {
+  all: unset; box-sizing: border-box; flex: 1; min-width: 0;
+  display: flex; align-items: flex-start; gap: var(--space-1-5);
+  margin-inline: calc(-1 * var(--space-1)); padding: 3px var(--space-1);
+  border-radius: var(--radius-xs); cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.sub-pick:hover, .sub-pick[aria-expanded="true"] { background: var(--color-accent-soft); }
+.sub-pick:hover .sub-check { box-shadow: 0 0 0 3px color-mix(in srgb, var(--sc) 16%, transparent); }
+.sub-pick:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+@media (pointer: coarse) { .sub-pick { padding-block: var(--space-1-5); } }
 .sub-edit { display: grid; gap: var(--space-1-5); }
 .sub-edit:empty { display: none; }
 .sub-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; gap: var(--space-1-5); align-items: center; }
@@ -825,18 +850,31 @@ span.prio.sub-prio { min-height: 0; padding: 0 3px; align-self: center; border: 
 .cmt-del:hover, .cmt-del.armed { color: var(--color-bad); }
 .cmt-new { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1-5); align-items: end; }
 .cmt-new textarea { overflow: auto; }
-/* The comments panel slides open under the card's chips, and slides shut again */
-.cmts-wrap { display: grid; grid-template-rows: 1fr; min-width: 0; animation: cmts-open var(--dur-slow) var(--ease); }
-.cmts-wrap.is-closing { animation: cmts-close var(--dur) var(--ease) forwards; }
+/* The comments panel slides open under the card's chips, and slides shut again.
+   The gap the panel adds above itself is borrowed from the card's bottom padding and handed back as the panel grows
+   (a negative margin can't do it: a grid/flex row won't shrink below zero), so the card doesn't jump on the first
+   frame. The content fades in a beat after the height starts so nothing looks clipped. */
+.card { --cmts-ease: cubic-bezier(.32, .72, 0, 1); }
+.cmts-wrap {
+  display: grid; grid-template-rows: 1fr; min-width: 0;
+  animation: cmts-open 380ms var(--cmts-ease) both;
+}
+.cmts-wrap.is-closing { animation: cmts-close 240ms cubic-bezier(.4, 0, .6, 1) forwards; }
 .cmts-inner { min-height: 0; min-width: 0; overflow: hidden; }
-.cmts-inner > .cmts { animation: cmts-rise var(--dur-slow) var(--ease); }
-@keyframes cmts-open { from { grid-template-rows: 0fr; opacity: 0; } }
-@keyframes cmts-close { to { grid-template-rows: 0fr; opacity: 0; } }
-@keyframes cmts-rise { from { translate: 0 -6px; } }
+.cmts-inner > .cmts { animation: cmts-rise 380ms var(--cmts-ease) 40ms both; will-change: opacity, translate; }
+.cmts-wrap.is-closing .cmts-inner > .cmts { animation: cmts-fade 160ms ease-out forwards; }
+.card:has(> .cmts-wrap) { animation: cmts-gap-in 380ms var(--cmts-ease) both; }
+.card:has(> .cmts-wrap.is-closing) { animation: cmts-gap-out 240ms cubic-bezier(.4, 0, .6, 1) forwards; }
+@keyframes cmts-open { from { grid-template-rows: 0fr; } }
+@keyframes cmts-close { to { grid-template-rows: 0fr; } }
+@keyframes cmts-gap-in { from { padding-bottom: calc(var(--card-pad-b) - var(--card-gap)); } }
+@keyframes cmts-gap-out { to { padding-bottom: calc(var(--card-pad-b) - var(--card-gap)); } }
+@keyframes cmts-rise { from { opacity: 0; translate: 0 -8px; } }
+@keyframes cmts-fade { to { opacity: 0; translate: 0 -4px; } }
 /* Send is just the arrow icon, tinted when there is something to send */
 .cmt-send { flex: none; color: var(--color-accent-ink); }
 @media (prefers-reduced-motion: reduce) {
-  .cmts-wrap, .cmts-inner > .cmts { animation-duration: 1ms; }
+  .cmts-wrap, .cmts-inner > .cmts, .card:has(> .cmts-wrap) { animation-duration: 1ms; animation-delay: 0ms; }
 }
 
 /* ---------- Month view ---------- */
@@ -883,6 +921,14 @@ span.prio.sub-prio { min-height: 0; padding: 0 3px; align-self: center; border: 
 }
 #menu button:hover, #menu button:focus-visible { background: var(--color-accent-soft); color: var(--color-accent-ink); }
 #menu button[aria-checked="true"] { font-weight: var(--weight-semibold); }
+/* Coloured status check or priority flag in front of each menu entry */
+#menu .menu-name { flex: 1; margin-left: calc(var(--space-2-5) - var(--space-4)); }
+#menu .sub-check { margin: 0; cursor: inherit; transform: none; box-shadow: none; }
+.menu-flag { display: inline-grid; place-items: center; width: 16px; flex: none; }
+.menu-flag.pr-urgent { color: var(--color-bad); }
+.menu-flag.pr-high { color: var(--color-warn); }
+.menu-flag.pr-low { color: var(--color-muted); }
+.menu-flag.none { color: var(--color-faint); }
 
 dialog {
   width: min(var(--dialog-w), calc(100vw - 2 * var(--gutter)));
@@ -1262,11 +1308,11 @@ dialog.gate { --dialog-w: 440px; }
 }
 @media (min-width: 768px) {
   /* Cards lay out wide rather than tall: the chips and the status buttons share a row when they fit */
-  .week .card { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1-5) var(--space-1); }
-  .week .card > * { flex: 1 1 100%; }
-  .week .card > .meta, .week .card > .card-foot { display: contents; }
-  .week .card > .more { flex: none; }
-  .week .card .card-title { margin-bottom: var(--space-0-5); }
+  :is(.week, :where(.drag-ghost.in-week)) .card { display: flex; flex-wrap: wrap; align-items: center; gap: var(--card-gap) var(--space-1); }
+  :is(.week, :where(.drag-ghost.in-week)) .card > * { flex: 1 1 100%; }
+  :is(.week, :where(.drag-ghost.in-week)) .card > .meta, :is(.week, :where(.drag-ghost.in-week)) .card > .card-foot { display: contents; }
+  :is(.week, :where(.drag-ghost.in-week)) .card > .more { flex: none; }
+  :is(.week, :where(.drag-ghost.in-week)) .card .card-title { margin-bottom: var(--space-0-5); }
 }
 
 /* lg: laptops. The add form tightens */
@@ -1290,7 +1336,7 @@ dialog.gate { --dialog-w: 440px; }
 /* sm and xs: phones. The rail becomes a bottom tab bar; one column; add form folds away */
 @media (max-width: 767px) {
   body:has(.shell) { padding: 0; }
-  .shell { display: block; height: 100dvh; }
+  .shell { display: block; height: calc(100dvh + var(--vh-gap)); }
   .main-col { gap: var(--space-2); height: 100%; }
   .main-col { padding-top: calc(var(--space-2) + var(--safe-top)); }
   .window { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: 0; }
@@ -1312,7 +1358,8 @@ dialog.gate { --dialog-w: 440px; }
   .top .burger { display: inline-grid; flex: none; }
   .rail {
     position: fixed; top: auto; left: var(--space-2); right: var(--space-2);
-    bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+    /* Close to the screen's bottom edge; on iPhones with a home bar it sits just above it */
+    bottom: calc(max(var(--space-1-5), env(safe-area-inset-bottom, 0px) - 12px) - var(--vh-gap));
     height: var(--tabbar-h);
     flex-direction: row; padding: 0 var(--space-1);
     border-radius: var(--radius-xl);
@@ -1436,8 +1483,8 @@ dialog.gate { --dialog-w: 440px; }
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 30%, transparent);
   }
   .week .list { gap: var(--space-2-5); }
-  .week .card { padding: var(--space-3) var(--space-3-5) var(--space-3) var(--space-4); }
-  .week .card-title { font-size: var(--text-md); }
+  :is(.week, :where(.drag-ghost.in-week)) .card { --card-pad-b: var(--space-3); padding: var(--space-3) var(--space-3-5) var(--card-pad-b) var(--space-4); }
+  :is(.week, :where(.drag-ghost.in-week)) .card-title { font-size: var(--text-md); }
   .week .empty { padding: var(--space-8) 0; text-align: center; font-size: var(--text-sm); }
 
   .week-dots {
@@ -1472,7 +1519,7 @@ dialog.gate { --dialog-w: 440px; }
   .week-dot.is-active .week-dot-label { opacity: 1; transform: none; transition-delay: 80ms; }
   .status-board { grid-template-columns: minmax(0, 1fr); }
 
-  #toast { bottom: calc(var(--tabbar-h) + var(--space-4) + env(safe-area-inset-bottom, 0px)); }
+  #toast { bottom: calc(var(--tabbar-h) + var(--space-4) + env(safe-area-inset-bottom, 0px) - var(--vh-gap)); }
 }
 
 /* xs: narrow phones */
@@ -1628,7 +1675,7 @@ dialog.gate { --dialog-w: 440px; }
   /* Status, priority and comment pills on cards: 34px tall (--control-xs), readable text */
   .status, .prio, .cmt-btn { font-size: var(--text-xs); padding-inline: var(--space-2-5); }
   .card-foot, .meta { gap: var(--space-1-5); }
-  .week .card { row-gap: var(--space-2); }
+  :is(.week, :where(.drag-ghost.in-week)) .card { --card-gap: var(--space-2); }
   /* Read-only labels (table, previews) aren't buttons, so they keep their small size */
   span.status, span.prio { min-height: 24px; }
   /* Pills inside the task window line up in a list, so they can be a little shorter */
@@ -1661,15 +1708,12 @@ dialog.gate { --dialog-w: 440px; }
 
   /* ---- Bottom tab bar: a capsule like the Day / Night switch ----
      Each page is an equal slot with its icon over its label; the active page sits on a
-     glowing pill. Scrolling down the page shrinks the bar (lower, narrower, icons only);
-     scrolling up or tapping it grows it back. */
+     glowing pill. The bar stays put at one size, close to the screen edges. */
   .rail {
-    left: max(var(--space-3), env(safe-area-inset-left, 0px));
-    right: max(var(--space-3), env(safe-area-inset-right, 0px));
+    left: max(var(--space-1-5), env(safe-area-inset-left, 0px));
+    right: max(var(--space-1-5), env(safe-area-inset-right, 0px));
     padding: 5px;
     border-radius: var(--radius-pill);
-    transition: left var(--dur-slow) var(--ease-spring), right var(--dur-slow) var(--ease-spring),
-      height var(--dur-slow) var(--ease-spring), bottom var(--dur-slow) var(--ease-spring);
   }
   .rail-items { justify-content: stretch; align-items: stretch; gap: 2px; }
   .rail-item {
@@ -1677,32 +1721,17 @@ dialog.gate { --dialog-w: 440px; }
     gap: 3px; padding: 0 2px;
     border-radius: var(--radius-pill);
   }
-  .rail-item svg { width: 22px; height: 22px; transition: transform var(--dur-slow) var(--ease-spring), width var(--dur-slow) var(--ease), height var(--dur-slow) var(--ease); }
+  .rail-item svg { width: 22px; height: 22px; transition: transform var(--dur-slow) var(--ease-spring); }
   .rail-item[aria-current="page"] { font-weight: var(--weight-semibold); }
   .rail-blob { border-radius: var(--radius-pill); }
   .rail-label {
     font-size: 12px; line-height: 1.1; font-weight: inherit;
     max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    max-height: 16px;
-    transition: opacity var(--dur) var(--ease), max-height var(--dur-slow) var(--ease);
   }
   .rail-add {
     width: 50px; height: 50px; margin-inline: 3px;
-    transition: transform var(--dur-fast) var(--ease), width var(--dur-slow) var(--ease-spring), height var(--dur-slow) var(--ease-spring);
+    transition: transform var(--dur-fast) var(--ease);
   }
-
-  /* Shrunk */
-  .rail.is-compact {
-    height: var(--tabbar-h-compact);
-    left: max(13%, var(--space-3)); right: max(13%, var(--space-3));
-    padding: 4px;
-    cursor: pointer;
-  }
-  .rail.is-compact .rail-label { opacity: 0; max-height: 0; }
-  .rail.is-compact .rail-item { gap: 0; }
-  .rail.is-compact .rail-item svg { width: 20px; height: 20px; }
-  .rail.is-compact .rail-add { width: 36px; height: 36px; }
-  .rail.is-compact .rail-add svg { width: 18px; height: 18px; }
 
   /* The four week numbers sit in one compact row, so the day's tasks start higher up */
   .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-1-5); }
@@ -1781,4 +1810,96 @@ dialog.gate { --dialog-w: 440px; }
   .pv-subs .sub-title { flex: 1 1 calc(100% - 40px); }
   .pv-subs .sub-prio { margin-left: calc(22px + var(--space-1-5)); }
   .pv-subs .sub-status { flex: 1 1 auto; max-width: 140px; }
+}
+
+/* ---------- Notifications ---------- */
+/* Unread count on the Notifications page item (rail, phone menu) and a dot on the phone burger */
+.count-badge {
+  position: absolute; top: -4px; right: -4px; z-index: 2;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  display: inline-grid; place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-bad); color: #fff;
+  font: var(--weight-bold) 10px / 1 var(--font-ui);
+  box-shadow: 0 0 0 2px var(--window-bg);
+  pointer-events: none;
+}
+.count-badge.is-inline { position: static; margin-left: auto; box-shadow: none; font-size: 11px; height: 20px; min-width: 20px; }
+.top .burger { position: relative; }
+.dot-badge {
+  position: absolute; top: 6px; right: 6px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--color-bad); box-shadow: 0 0 0 2px var(--panel-bg);
+}
+
+.notif-page { display: grid; gap: var(--space-4); max-width: 760px; }
+
+.push-card {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  overflow: hidden;
+}
+.push-card.is-offer { border-color: color-mix(in srgb, var(--color-accent) 40%, var(--panel-border)); background: linear-gradient(135deg, var(--color-accent-soft), transparent 70%), var(--panel-bg); }
+.push-card.is-ok { border-color: color-mix(in srgb, var(--color-ok) 45%, transparent); background: color-mix(in srgb, var(--color-ok) 10%, var(--panel-bg)); }
+.push-card.is-bad { border-color: color-mix(in srgb, var(--color-warn) 40%, transparent); background: color-mix(in srgb, var(--color-warn) 9%, var(--panel-bg)); }
+.push-card-icon {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-md);
+  background: var(--gradient-accent); color: var(--color-on-accent);
+  box-shadow: var(--btn-depth-accent), var(--shadow-glow);
+}
+.push-card.is-ok .push-card-icon { background: var(--color-ok); box-shadow: none; color: #fff; }
+.push-card.is-bad .push-card-icon { background: color-mix(in srgb, var(--color-warn) 20%, transparent); color: var(--color-warn); box-shadow: none; }
+.push-card-text h2 { margin: 0; font: var(--weight-semibold) var(--text-md) / var(--leading-tight) var(--font-display); }
+.push-card-text p { margin: var(--space-1) 0 0; font-size: var(--text-sm); color: var(--color-muted); line-height: var(--leading-normal); }
+.push-card-action .primary { white-space: nowrap; }
+.push-spinner {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid rgb(255 255 255 / .35); border-top-color: currentColor;
+  animation: push-spin 800ms linear infinite;
+}
+@keyframes push-spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: no-preference) {
+  .push-card { animation: add-in 260ms cubic-bezier(.2, .8, .2, 1) both; }
+  .push-card.is-leaving { animation: push-out 420ms var(--ease) both; }
+}
+.push-card.is-leaving { opacity: 0; }
+@keyframes push-out { from { opacity: 1; max-height: 240px; } to { opacity: 0; max-height: 0; padding-block: 0; margin-bottom: calc(-1 * var(--space-4)); } }
+
+.notif-panel { padding: var(--space-2); }
+.notif-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-3) var(--space-3); }
+.notif-head h2 { margin: 0; font: var(--weight-semibold) var(--text-lg) / var(--leading-tight) var(--font-display); }
+.notif-empty { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-8, 48px) var(--space-4); color: var(--color-muted); text-align: center; font-size: var(--text-sm); }
+.notif-empty p { margin: 0; max-width: 34ch; }
+.notif-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.notif { position: relative; display: flex; align-items: center; border-radius: var(--radius-md); }
+.notif:hover { background: var(--panel-bg-hover); }
+.notif-main {
+  all: unset; box-sizing: border-box; cursor: pointer; flex: 1; min-width: 0;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: var(--space-3);
+  padding: var(--space-2-5, 10px) var(--space-3);
+  border-radius: var(--radius-md);
+}
+.notif-main:disabled { cursor: default; }
+.notif-main:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+.notif-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--color-sunk); color: var(--color-muted); }
+.notif.is-overdue .notif-icon { background: color-mix(in srgb, var(--color-bad) 14%, transparent); color: var(--color-bad); }
+.notif.is-test .notif-icon { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.notif-text { min-width: 0; display: grid; gap: 2px; }
+.notif-text b { font-weight: var(--weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notif-text span { font-size: var(--text-sm); color: var(--color-muted); }
+.notif.is-unread .notif-text b { font-weight: var(--weight-semibold); }
+.notif:not(.is-unread) .notif-text { opacity: .78; }
+.notif-main time { font-size: var(--text-xs); color: var(--color-faint); white-space: nowrap; }
+.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent); box-shadow: var(--shadow-glow); }
+.notif-del { margin-right: var(--space-1); opacity: 0; }
+.notif:hover .notif-del, .notif-del:focus-visible { opacity: 1; }
+@media (hover: none) { .notif-del { opacity: .7; } }
+
+@media (max-width: 767px) {
+  .push-card { grid-template-columns: auto minmax(0, 1fr); padding: var(--space-4); }
+  .push-card-action { grid-column: 1 / -1; }
+  .push-card-action .primary { width: 100%; }
+  .notif-main { grid-template-columns: auto minmax(0, 1fr) auto; padding-inline: var(--space-2); }
+  .notif-main time { grid-column: 2; grid-row: 2; margin-top: -6px; }
+  .notif-main .notif-dot { grid-column: 3; grid-row: 1 / span 2; }
 }

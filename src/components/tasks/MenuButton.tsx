@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { MenuIcon } from './StatusIcon';
 
 interface Item { id: string; name: string }
 
@@ -69,7 +70,7 @@ export default function MenuButton({ className, title, ariaLabel, items, current
           {items.map(it => (
             <button key={it.id} type="button" role="menuitemradio" aria-checked={it.id === current}
               onClick={() => { setOpen(false); if (it.id !== current) onPick(it.id); }}>
-              <span>{it.name}</span>{it.id === current && <span aria-hidden="true">✓</span>}
+              <MenuIcon id={it.id} /><span className="menu-name">{it.name}</span>{it.id === current && <span aria-hidden="true">✓</span>}
             </button>
           ))}
         </div>,

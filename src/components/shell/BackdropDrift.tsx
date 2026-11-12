@@ -19,6 +19,8 @@ export function BackdropDrift() {
     const timers = new Map<string, number>();
 
     const move = (axis: string) => {
+      // A task card is being dragged: the blobs are paused (TaskDrag), so wait with a new target.
+      if (document.documentElement.classList.contains('is-dragging-task')) { timers.set(axis, window.setTimeout(() => move(axis), 1000)); return; }
       const seconds = MIN_S + Math.random() * (MAX_S - MIN_S);
       style.setProperty(`--${axis}d`, `${seconds.toFixed(1)}s`);
       style.setProperty(`--${axis}`, `${(Math.random() * 100).toFixed(1)}%`);

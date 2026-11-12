@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { byPosition, inWeek, STATUSES } from '@/lib/tasks/model';
+import { byPosition, inWeek, statusPatch, STATUSES } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { useVisibleTasks } from '@/components/tasks/Filters';
 import DropColumn from '@/components/tasks/DropColumn';
@@ -23,7 +23,7 @@ export default function StatusBoard() {
               if (tasks.some(t => t.id === id)) return;
               const t = all.find(x => x.id === id);
               if (s.id === 'done' && t && hasOpenSubs(t.subtasks)) { setGateId(id); return; }
-              patchTask(id, { status: s.id });
+              patchTask(id, t ? statusPatch(t, s.id) : { status: s.id });
             }}
             header={<header className="col-head"><span className="col-name">{s.name}</span><span className="count">{tasks.length}</span></header>}
             empty={loaded && <p className="empty">Empty</p>}

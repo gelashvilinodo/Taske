@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import TaskCard from './TaskCard';
@@ -13,6 +13,10 @@ import TaskCard from './TaskCard';
  * Drop zones (day or status columns) mark themselves with data-drop and register a handler.
  * Holding the card at the left/right screen edge sends a "drag-edge" event (the board turns
  * that into previous/next day or week).
+ *
+ * Speed: nothing about the task changes until the drop. While the pointer moves, the ghost is
+ * moved straight in the DOM once per frame; React state (and so the board) only updates when the
+ * drop spot itself changes (another day, another place in the list, a screen edge).
  */
 
 export const DRAG_EDGE_EVENT = 'taske:drag-edge';
@@ -25,6 +29,15 @@ const EDGE_REPEAT_MS = 950;
 const SCROLL_ZONE = 90;  // auto-scroll the page near the top/bottom
 const LAND_MS = 240;     // the ghost gliding into its new spot on release
 
+/** The page backdrop's drifting colour blobs (CSS transitions on --bN*, see BackdropDrift). While a
+ *  card is dragged they hold still: every frame they move, all the glass on screen has to be blurred again. */
+const blobMotion = (run: boolean) => {
+  for (const a of document.getAnimations()) {
+    if (!(a as CSSTransition).transitionProperty?.startsWith('--b')) continue;
+    if (run) a.play(); else a.pause();
+  }
+};
+
 type Handler = (id: string, index: number) => void;
 export interface DragState {
   id: string;
@@ -36,6 +49,7 @@ export interface DragState {
   edge: -1 | 0 | 1;              // pointer at a screen edge
   edgeSteps: number;             // edge steps taken during this hold
   landing?: boolean;             // released: the ghost is gliding into the gap
+  inWeek: boolean;               // picked up from the week board, whose cards have their own layout
 }
 
 interface Ctx {
@@ -44,10 +58,23 @@ interface Ctx {
   register: (zone: string, handler: Handler) => () => void;
 }
 const DragCtx = createContext<Ctx | null>(null);
+/** What each card needs: which task is lifted (changes only at pick-up and drop). */
+interface SourceCtx { dragId: string | null; begin: Ctx['begin'] }
+const DragSourceCtx = createContext<SourceCtx | null>(null);
+
+/** Fields the UI renders from; the pointer position (x, y) is not one of them. */
+const SHOWN: (keyof DragState)[] = ['id', 'zone', 'index', 'edge', 'edgeSteps', 'landing', 'w', 'h'];
 
 export function useTaskDrag() {
   const v = useContext(DragCtx);
   if (!v) throw new Error('useTaskDrag must be used inside TaskDragProvider');
+  return v;
+}
+
+/** For task cards: the lifted task id and the pick-up handler, without re-rendering on every drag step. */
+export function useTaskDragSource() {
+  const v = useContext(DragSourceCtx);
+  if (!v) throw new Error('useTaskDragSource must be used inside TaskDragProvider');
   return v;
 }
 
@@ -57,10 +84,19 @@ function hitTest(x: number, y: number, id: string): { zone: string | null; index
   const zoneEl = el?.closest<HTMLElement>('[data-drop]');
   if (!zoneEl) return { zone: null, index: 0 };
   const cards = [...zoneEl.querySelectorAll<HTMLElement>('[data-task-id]')].filter(c => c.dataset.taskId !== id);
+  // Measure the cards where they would be without the open gap: cards below the gap are pushed
+  // down by it, and counting them there makes the gap trail behind when dragging downwards.
+  const slot = zoneEl.querySelector<HTMLElement>('.drop-slot');
+  let push = 0;
+  if (slot) {
+    const list = slot.parentElement;
+    push = slot.getBoundingClientRect().height + (list ? parseFloat(getComputedStyle(list).rowGap) || 0 : 0);
+  }
   let index = 0;
   for (const c of cards) {
     const r = c.getBoundingClientRect();
-    if (y > r.top + r.height / 2) index++;
+    const below = slot && slot.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING;
+    if (y > r.top - (below ? push : 0) + r.height / 2) index++;
   }
   return { zone: zoneEl.dataset.drop ?? null, index };
 }
@@ -71,6 +107,13 @@ export default function TaskDragProvider({ children }: { children: ReactNode }) 
   const handlers = useRef(new Map<string, Handler>());
   const live = useRef<DragState | null>(null); // latest state for listeners
   const cleanup = useRef<(() => void) | null>(null);
+  const ghost = useRef<HTMLDivElement>(null);
+
+  /** Put the ghost under the pointer, straight in the DOM. */
+  const place = () => {
+    const s = live.current, g = ghost.current;
+    if (s && g) g.style.transform = `translate(${s.x - s.offX}px, ${s.y - s.offY}px)`;
+  };
 
   const register = useCallback((zone: string, handler: Handler) => {
     handlers.current.set(zone, handler);
@@ -78,9 +121,12 @@ export default function TaskDragProvider({ children }: { children: ReactNode }) 
   }, []);
 
   const update = (patch: Partial<DragState>) => {
-    if (!live.current) return;
-    live.current = { ...live.current, ...patch };
-    setDrag(live.current);
+    const prev = live.current;
+    if (!prev) return;
+    const next = { ...prev, ...patch };
+    live.current = next;
+    if (SHOWN.some(k => next[k] !== prev[k])) setDrag(next); // re-render only when the drop spot changes
+    else place();
   };
 
   const begin = useCallback((e: RPointerEvent<HTMLElement>, id: string) => {
@@ -96,6 +142,7 @@ export default function TaskDragProvider({ children }: { children: ReactNode }) 
     let holdTimer: ReturnType<typeof setTimeout> | undefined;
     let edgeTimer: ReturnType<typeof setTimeout> | undefined;
     let raf = 0;
+    let moved = false; // pointer moved since the last frame
 
     const blockTouch = (ev: TouchEvent) => { if (active) ev.preventDefault(); };
     const blockMenu = (ev: Event) => ev.preventDefault();
@@ -125,7 +172,13 @@ export default function TaskDragProvider({ children }: { children: ReactNode }) 
       let dy = 0;
       if (lastY < SCROLL_ZONE) dy = -Math.ceil((SCROLL_ZONE - lastY) / 6);
       else if (lastY > innerHeight - SCROLL_ZONE - bottomGuard) dy = Math.ceil((lastY - (innerHeight - SCROLL_ZONE - bottomGuard)) / 6);
-      if (dy) { (document.querySelector('.page-scroll') ?? window).scrollBy(0, dy); update(hitTest(lastX, lastY, id)); }
+      if (dy) (document.querySelector('.page-scroll') ?? window).scrollBy(0, dy);
+      // At most one hit test and one ghost move per frame, however many pointer events arrived.
+      if (moved || dy) {
+        moved = false;
+        update({ x: lastX, y: lastY, ...hitTest(lastX, lastY, id) });
+        setEdge(lastX < EDGE_PX ? -1 : lastX > innerWidth - EDGE_PX ? 1 : 0);
+      }
       raf = requestAnimationFrame(tick);
     };
 
@@ -135,9 +188,10 @@ export default function TaskDragProvider({ children }: { children: ReactNode }) 
       try { card.setPointerCapture(pointerId); } catch { /* pointer already gone */ }
       try { navigator.vibrate?.(12); } catch { /* not supported */ }
       document.documentElement.classList.add('is-dragging-task');
+      blobMotion(false);
       live.current = {
         id, x: lastX, y: lastY, offX: startX - r.left, offY: startY - r.top, w: r.width, h: r.height,
-        edge: 0, edgeSteps: 0, ...hitTest(lastX, lastY, id),
+        edge: 0, edgeSteps: 0, inWeek: !!card.closest('.week'), ...hitTest(lastX, lastY, id),
       };
       setDrag(live.current);
       raf = requestAnimationFrame(tick);
@@ -147,13 +201,12 @@ export default function TaskDragProvider({ children }: { children: ReactNode }) 
       if (ev.pointerId !== pointerId) return;
       lastX = ev.clientX; lastY = ev.clientY;
       if (!active) {
-        const moved = Math.hypot(lastX - startX, lastY - startY);
-        if (touch) { if (moved > TOUCH_SLOP) finish(false); return; }
-        if (moved < MOUSE_SLOP) return;
+        const dist = Math.hypot(lastX - startX, lastY - startY);
+        if (touch) { if (dist > TOUCH_SLOP) finish(false); return; }
+        if (dist < MOUSE_SLOP) return;
         activate();
       }
-      update({ x: lastX, y: lastY, ...hitTest(lastX, lastY, id) });
-      setEdge(lastX < EDGE_PX ? -1 : lastX > innerWidth - EDGE_PX ? 1 : 0);
+      moved = true; // handled in the next animation frame (tick)
     };
 
     const finish = (drop: boolean) => {
@@ -166,6 +219,9 @@ export default function TaskDragProvider({ children }: { children: ReactNode }) 
       window.removeEventListener('touchmove', blockTouch);
       window.removeEventListener('contextmenu', blockMenu, true);
       document.documentElement.classList.remove('is-dragging-task');
+      if (active) blobMotion(true);
+      // Catch up on a move the last frame did not handle yet, so the drop goes where the pointer is.
+      if (active && moved && live.current) { moved = false; live.current = { ...live.current, x: lastX, y: lastY, ...hitTest(lastX, lastY, id) }; }
       const state = live.current;
       const done = () => {
         cleanup.current = null;
@@ -203,19 +259,26 @@ export default function TaskDragProvider({ children }: { children: ReactNode }) 
   }, [readOnly]);
 
   useEffect(() => () => cleanup.current?.(), []);
+  // After each render (pick-up, landing) the ghost takes the latest position.
+  useLayoutEffect(place, [drag]);
 
   const value = useMemo(() => ({ drag, begin, register }), [drag, begin, register]);
+  const dragId = drag?.id ?? null;
+  const source = useMemo(() => ({ dragId, begin }), [dragId, begin]);
   const task = drag ? tasks.find(t => t.id === drag.id) : undefined;
 
   return (
     <DragCtx.Provider value={value}>
-      {children}
-      {drag && task && createPortal(
-        <div className={'drag-ghost' + (drag.landing ? ' is-landing' : '')} style={{ '--land-ms': LAND_MS + 'ms', width: drag.w, transform: `translate(${drag.x - drag.offX}px, ${drag.y - drag.offY}px)` } as CSSProperties} aria-hidden="true">
-          <TaskCard t={task} ghost />
-        </div>,
-        document.body,
-      )}
+      <DragSourceCtx.Provider value={source}>
+        {children}
+        {drag && task && createPortal(
+          // `in-week` gives the copy the board's card layout (it lives outside the board), so nothing in it moves.
+          <div ref={ghost} inert className={'drag-ghost' + (drag.inWeek ? ' in-week' : '') + (drag.landing ? ' is-landing' : '')} style={{ '--land-ms': LAND_MS + 'ms', width: drag.w } as CSSProperties} aria-hidden="true">
+            <TaskCard t={task} ghost />
+          </div>,
+          document.body,
+        )}
+      </DragSourceCtx.Provider>
     </DragCtx.Provider>
   );
 }

@@ -2,7 +2,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   // Cloudflare Worker that serves the Next.js app (built by OpenNext into .open-next/).
   "name": "taske",
-  "main": ".open-next/worker.js",
+  // worker.ts wraps .open-next/worker.js and adds the cron trigger below.
+  "main": "worker.ts",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
@@ -10,6 +11,8 @@
     "binding": "ASSETS"
   },
   "observability": { "enabled": true },
+  // Overdue-task notifications: every 15 minutes (see worker.ts and src/app/api/cron/overdue).
+  "triggers": { "crons": ["*/15 * * * *"] },
   // Served on taske.ge and www.taske.ge; Cloudflare creates the DNS records and SSL certificates.
   // The workers.dev address stays on as a backup.
   "routes": [
@@ -21,6 +24,10 @@
   // Both are safe to publish; row level security protects the data. Never put the secret/service_role key here.
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://yvnpeiccqvlupvylxubo.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_eMzxA286Q4KRbl6G85Yj1Q_oU-_9XAP"
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_eMzxA286Q4KRbl6G85Yj1Q_oU-_9XAP",
+    // Push notifications: the public half of the VAPID key pair (the browser needs it to subscribe).
+    // Secrets, set with `npx wrangler secret put <NAME>`: VAPID_PRIVATE_KEY, SUPABASE_SECRET_KEY, CRON_SECRET.
+    "VAPID_PUBLIC_KEY": "BLa0C1avsNRh1vnzp62GMTvX-lT2F9MvMXexuMxwgIySTouyyHUo3kVXM2MbvMXmB_En1QgBpjLEaz1cd-3DT1Q",
+    "VAPID_SUBJECT": "https://taske.ge"
   }
 }

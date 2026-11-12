@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { DAYS_S, parse, shortDate, weekday } from '@/lib/dates';
-import { closed, makeSubs, PRIORITIES, prioName, STATUSES, statusName, subProgress, type Task } from '@/lib/tasks/model';
+import { closed, makeSubs, PRIORITIES, prioName, STATUSES, statusName, statusPatch, subProgress, subtasksPatch, type Task } from '@/lib/tasks/model';
 import { ProjectChip } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { IconCalendar, IconClose, IconComment, IconDescription, IconEdit, IconFlag, IconPlus, IconSubtasks, IconTrash } from '@/components/shell/icons';
@@ -78,7 +78,7 @@ export default function TaskPreview() {
                   items={STATUSES} current={t.status}
                   onPick={id => {
                     if (id === 'done' && hasOpenSubs(t.subtasks)) { setGate(true); return; }
-                    patchTask(t.id, { status: id as Task['status'] });
+                    patchTask(t.id, statusPatch(t, id as Task['status']));
                   }}>
                   {statusName(t.status)}
                 </MenuButton>
@@ -119,7 +119,7 @@ export default function TaskPreview() {
                 </h4>
                 {t.subtasks.length > 0 && (
                   <SubtaskList className="sub-list pv-subs" subs={t.subtasks} menus
-                    onChange={writable ? subtasks => patchTask(t.id, { subtasks }) : undefined} />
+                    onChange={writable ? subtasks => patchTask(t.id, subtasksPatch(t, subtasks)) : undefined} />
                 )}
                 {writable && (
                   <div className="sub-new">

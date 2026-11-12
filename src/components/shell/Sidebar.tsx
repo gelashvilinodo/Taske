@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, type 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
+import { useNotifications } from '@/components/notifications/NotificationsProvider';
 import { requestAddOnDay } from '@/components/tasks/AddTaskForm';
 import { IconLogout, IconPlus } from './icons';
 import { PAGES, PHONE_PAGES, pageFor } from './pages';
@@ -26,6 +27,7 @@ export default function Sidebar() {
   const path = usePathname();
   const current = pageFor(path).href;
   const { account, signOut, readOnly } = useWorkspace();
+  const { unread } = useNotifications();
   const items = useRef<HTMLDivElement>(null);
   const [blob, setBlob] = useState<Blob | null>(null);
   /** No visible bar item for the page (a burger-menu page on phones): the blob fades out. */
@@ -34,28 +36,6 @@ export default function Sidebar() {
   const [drag, setDrag] = useState<Drag | null>(null);
   const gesture = useRef<{ id: number; startX: number; active: boolean; under: number } | null>(null);
   const swallowClick = useRef(false);
-  /** Phone bar shrunk while reading down the page (Instagram-style); grows back on the way up or on a tap. */
-  const [compact, setCompact] = useState(false);
-
-  // Phone: watch the window's scroll direction. Down (reading on) shrinks the bar, up grows it.
-  useEffect(() => {
-    const el = document.querySelector<HTMLElement>('.page-scroll');
-    if (!el) return;
-    let last = el.scrollTop;
-    const onScroll = () => {
-      const y = el.scrollTop;
-      if (!isPhone()) { last = y; return; }
-      if (y < 24) setCompact(false);
-      else if (y - last > 8) setCompact(true);
-      else if (last - y > 8) setCompact(false);
-      else return; // small jitter: keep the reference point
-      last = y;
-    };
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
-  }, []);
-  // A new page starts with the full bar
-  useEffect(() => setCompact(false), [current]);
 
   // Put the blob under the active page.
   const place = useCallback(() => {
@@ -83,7 +63,7 @@ export default function Sidebar() {
   const targets = () => [...(items.current?.querySelectorAll<HTMLElement>(':scope > .rail-item') ?? [])].filter(el => el.offsetParent !== null);
 
   const onPointerDown = (e: RPointerEvent<HTMLDivElement>) => {
-    if (!isPhone() || !blob || e.button !== 0 || compact) return;
+    if (!isPhone() || !blob || e.button !== 0) return;
     gesture.current = { id: e.pointerId, startX: e.clientX, active: false, under: -1 };
   };
   const onPointerMove = (e: RPointerEvent<HTMLDivElement>) => {
@@ -141,13 +121,7 @@ export default function Sidebar() {
   } as CSSProperties) : undefined;
 
   return (
-    <nav className={'rail' + (compact ? ' is-compact' : '')} aria-label="Pages"
-      onClickCapture={e => {
-        // A tap on the shrunk bar only grows it back; the next tap picks a page
-        if (!compact) return;
-        e.preventDefault(); e.stopPropagation();
-        setCompact(false);
-      }}>
+    <nav className="rail" aria-label="Pages">
       <Link className="rail-logo" href="/" aria-label="Taske home"><span aria-hidden="true" /></Link>
       <div className={'rail-items' + (drag ? ' is-dragging' : '')} ref={items}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onClickCapture={onClickCapture}>
@@ -164,6 +138,7 @@ export default function Sidebar() {
               aria-current={current === href ? 'page' : undefined} aria-label={label} data-tip={label}>
               <Icon />
               <span className="rail-label">{shortLabel(label)}</span>
+              {href === '/notifications' && unread > 0 && <span className="count-badge" aria-label={`${unread} unread`}>{unread > 9 ? '9+' : unread}</span>}
             </Link>
           </React.Fragment>
         ))}

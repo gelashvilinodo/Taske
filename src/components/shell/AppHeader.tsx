@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
+import { useNotifications } from '@/components/notifications/NotificationsProvider';
 import { requestAddOnDay } from '@/components/tasks/AddTaskForm';
 import { IconMenu, IconPlus } from './icons';
 import { pageFor } from './pages';
@@ -18,6 +19,7 @@ export default function AppHeader() {
   const path = usePathname();
   const page = pageFor(path);
   const { readOnly, account } = useWorkspace();
+  const { unread } = useNotifications();
   const canAdd = !readOnly && (page.href === '/board' || page.href === '/list');
   const [menu, setMenu] = useState(false);
   const closeMenu = useCallback(() => setMenu(false), []);
@@ -26,7 +28,7 @@ export default function AppHeader() {
     <header className="top">
       <div className="page-head">
         <button className="round-btn burger" type="button" aria-label="Open menu" aria-expanded={menu} aria-controls="mobileMenu"
-          onClick={() => setMenu(true)}><IconMenu /></button>
+          onClick={() => setMenu(true)}><IconMenu />{unread > 0 && <span className="dot-badge" aria-label={`${unread} unread notifications`} />}</button>
         <h1>{page.label}</h1>
       </div>
       <div className="top-right">
