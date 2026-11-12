@@ -124,8 +124,10 @@
     inset 0 10px 14px -10px rgb(255 255 255 / .28),
     inset 0 -2px 0 rgb(30 0 90 / .30),
     0 1px 2px rgb(40 0 110 / .25);
-  /* The big app window and the light panels inside it (panels do not blur) */
-  --window-bg: light-dark(rgb(255 255 255 / .18), rgb(24 22 34 / .30));
+  /* The main containers (app window and icon rail) and the light panels inside them.
+     The containers are kept very see-through so the moving colour shows; panels stay
+     denser so content reads easily (panels do not blur). */
+  --window-bg: light-dark(rgb(255 255 255 / .08), rgb(24 22 34 / .16));
   --panel-bg: light-dark(rgb(255 255 255 / .40), rgb(255 255 255 / .035));
   --panel-bg-hover: light-dark(rgb(255 255 255 / .65), rgb(255 255 255 / .08));
   /* In light mode a white border on a white panel reads as a flat line, so it gets a
