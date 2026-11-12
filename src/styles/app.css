@@ -205,7 +205,7 @@ body:has(.shell) { padding-bottom: max(var(--shell-pad), env(safe-area-inset-bot
   border-radius: 50%;
   background: var(--panel-bg); border: var(--border-width) solid var(--panel-border);
   color: var(--color-ink);
-  box-shadow: var(--glass-highlight);
+  box-shadow: var(--btn-depth);
 }
 .round-btn:hover { background: var(--panel-bg-hover); border-color: var(--color-accent); color: var(--color-accent-ink); }
 .avatar {
@@ -227,7 +227,7 @@ body:has(.shell) { padding-bottom: max(var(--shell-pad), env(safe-area-inset-bot
   box-shadow: var(--glass-highlight);
 }
 .nav-left { display: flex; align-items: center; gap: var(--space-1-5); min-width: 0; }
-.nav .icon-btn { border-radius: 50%; width: var(--control-md); min-height: var(--control-md); border-color: transparent; background: transparent; }
+.nav .icon-btn { border-radius: 50%; width: var(--control-md); min-height: var(--control-md); border-color: transparent; background: transparent; box-shadow: none; }
 .nav .icon-btn:hover { background: var(--panel-bg-hover); }
 .nav .ghost { border-radius: var(--radius-pill); min-height: var(--control-md); padding-inline: var(--space-4); }
 .period { min-width: 0; padding-inline: var(--space-2); text-align: center; }
@@ -248,7 +248,9 @@ body:has(.shell) { padding-bottom: max(var(--shell-pad), env(safe-area-inset-bot
   border: var(--border-width) solid var(--panel-border);
   border-radius: var(--radius-pill);
   color: var(--color-ink);
+  box-shadow: var(--btn-depth);
 }
+.icon-btn:active, .ghost:active, .round-btn:active, .add-btn:active { transform: translateY(1px); }
 .icon-btn { width: var(--control-sm); font-size: var(--text-md); line-height: 1; display: inline-grid; place-items: center; }
 .ghost { padding: var(--space-0-5) var(--space-3); font-size: var(--text-sm); }
 .icon-btn:hover, .ghost:hover { border-color: var(--color-accent); color: var(--color-accent-ink); background: var(--panel-bg-hover); }
@@ -271,7 +273,7 @@ body:has(.shell) { padding-bottom: max(var(--shell-pad), env(safe-area-inset-bot
 .seg button[aria-pressed="true"] {
   background: var(--gradient-accent); color: var(--color-on-accent);
   font-weight: var(--weight-semibold);
-  box-shadow: var(--shadow-glow), inset 0 1px 0 rgb(255 255 255 / .25);
+  box-shadow: var(--btn-depth-accent), var(--shadow-glow);
 }
 
 .field { display: grid; gap: var(--space-1); min-width: 0; }
@@ -299,10 +301,10 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
   font-weight: var(--weight-semibold);
   font-size: var(--text-sm);
   padding: var(--space-1) var(--space-5);
-  box-shadow: var(--shadow-glow), inset 0 1px 0 rgb(255 255 255 / .25);
+  box-shadow: var(--btn-depth-accent), var(--shadow-glow);
 }
 .primary:hover { filter: brightness(1.1); }
-.primary:active { transform: translateY(1px); }
+.primary:active { transform: translateY(1px); box-shadow: var(--btn-depth-accent); }
 
 .more {
   all: unset; justify-self: start;
@@ -379,7 +381,7 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
 .filter[aria-pressed="true"] {
   background: var(--gradient-accent); color: var(--color-on-accent);
   font-weight: var(--weight-semibold);
-  box-shadow: var(--shadow-glow), inset 0 1px 0 rgb(255 255 255 / .25);
+  box-shadow: var(--btn-depth-accent), var(--shadow-glow);
 }
 .filter[aria-pressed="true"] b { background: rgb(255 255 255 / .2); }
 
@@ -855,8 +857,9 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   border: var(--border-width) solid color-mix(in srgb, var(--color-accent) 35%, transparent);
   border-radius: var(--radius-sm);
   background: var(--color-accent-soft); color: var(--color-accent-ink);
+  box-shadow: var(--btn-depth);
 }
-.add-btn:hover { background: var(--gradient-accent); color: var(--color-on-accent); border-color: transparent; box-shadow: var(--shadow-glow); }
+.add-btn:hover { background: var(--gradient-accent); color: var(--color-on-accent); border-color: transparent; box-shadow: var(--btn-depth-accent), var(--shadow-glow); }
 .filter .pj-logo-xs { margin-left: -2px; }
 .filter[aria-pressed="true"] .pj-logo { box-shadow: 0 0 0 1px rgb(255 255 255 / .6); }
 
