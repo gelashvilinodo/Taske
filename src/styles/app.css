@@ -47,24 +47,21 @@ body::after {
 }
 @media (display-mode: browser) { body::after { box-shadow: none; } }
 
-/* The backdrop blobs drift slowly, each on its own clock, so the light behind the
-   glass keeps shifting without ever looping visibly. Both layers run the same
-   animations from page load, so the status-bar strip stays in step with the page. */
+/* The backdrop blobs wander. BackdropDrift.tsx picks a new random spot for each
+   blob's x and y on its own timer and duration (--bNxd / --bNyd); both layers glide
+   there with the same transition, so the status-bar strip stays in step with the page.
+   x and y retarget separately, so blobs move on curves, not straight lines. */
+body::before, body::after { background-blend-mode: var(--backdrop-blend); }
 @media (prefers-reduced-motion: no-preference) {
   body::before, body::after {
-    animation:
-      drift-1 22s ease-in-out infinite alternate,
-      drift-2 28s ease-in-out infinite alternate,
-      drift-3 25s ease-in-out infinite alternate,
-      drift-4 19s ease-in-out infinite alternate,
-      drift-5 31s ease-in-out infinite alternate;
+    transition:
+      --b1x var(--b1xd, 20s) ease-in-out, --b1y var(--b1yd, 20s) ease-in-out,
+      --b2x var(--b2xd, 20s) ease-in-out, --b2y var(--b2yd, 20s) ease-in-out,
+      --b3x var(--b3xd, 20s) ease-in-out, --b3y var(--b3yd, 20s) ease-in-out,
+      --b4x var(--b4xd, 20s) ease-in-out, --b4y var(--b4yd, 20s) ease-in-out,
+      --b5x var(--b5xd, 20s) ease-in-out, --b5y var(--b5yd, 20s) ease-in-out;
   }
 }
-@keyframes drift-1 { 33% { --b1x: 22%; --b1y: 30%; } 66% { --b1x: 4%;  --b1y: 48%; } 100% { --b1x: 30%; --b1y: 6%;  } }
-@keyframes drift-2 { 33% { --b2x: 74%; --b2y: 24%; } 66% { --b2x: 96%; --b2y: 40%; } 100% { --b2x: 62%; --b2y: 4%;  } }
-@keyframes drift-3 { 33% { --b3x: 70%; --b3y: 92%; } 66% { --b3x: 94%; --b3y: 58%; } 100% { --b3x: 78%; --b3y: 70%; } }
-@keyframes drift-4 { 33% { --b4x: 40%; --b4y: 82%; } 66% { --b4x: 8%;  --b4y: 70%; } 100% { --b4x: 46%; --b4y: 98%; } }
-@keyframes drift-5 { 33% { --b5x: 36%; --b5y: 58%; } 66% { --b5x: 64%; --b5y: 30%; } 100% { --b5x: 46%; --b5y: 50%; } }
 
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }

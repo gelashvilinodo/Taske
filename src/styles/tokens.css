@@ -241,36 +241,42 @@
 
 /* ---------- Page backdrop ----------
    A few saturated colour blobs behind the glass. Blur only shows where there is colour
-   and contrast to blur, so the blobs are small and strong, and some sit under the rail
-   and the window edges. Each blob's centre is a registered property (--bNx / --bNy) so
-   app.css can drift it slowly; --backdrop is declared on the painting layers themselves
-   (body::before / ::after) so it picks up their animated positions, not the root's. */
-@property --b1x { syntax: "<percentage>"; inherits: false; initial-value: 6%; }
-@property --b1y { syntax: "<percentage>"; inherits: false; initial-value: 12%; }
-@property --b2x { syntax: "<percentage>"; inherits: false; initial-value: 92%; }
-@property --b2y { syntax: "<percentage>"; inherits: false; initial-value: 8%; }
-@property --b3x { syntax: "<percentage>"; inherits: false; initial-value: 88%; }
-@property --b3y { syntax: "<percentage>"; inherits: false; initial-value: 78%; }
-@property --b4x { syntax: "<percentage>"; inherits: false; initial-value: 22%; }
-@property --b4y { syntax: "<percentage>"; inherits: false; initial-value: 96%; }
-@property --b5x { syntax: "<percentage>"; inherits: false; initial-value: 52%; }
-@property --b5y { syntax: "<percentage>"; inherits: false; initial-value: 42%; }
+   and contrast to blur, so the blobs are small and strong. Each blob's centre is a
+   registered property (--bNx / --bNy). BackdropDrift.tsx sets a new random target on
+   <body> every so often; the painting layers (body::before / ::after) inherit it and
+   glide there (transition in app.css), so --backdrop is declared on those layers to
+   use their in-between positions, not the root's. Where blobs overlap they blend
+   (--backdrop-blend), so two colours passing each other make a third. */
+@property --b1x { syntax: "<percentage>"; inherits: true; initial-value: 6%; }
+@property --b1y { syntax: "<percentage>"; inherits: true; initial-value: 12%; }
+@property --b2x { syntax: "<percentage>"; inherits: true; initial-value: 92%; }
+@property --b2y { syntax: "<percentage>"; inherits: true; initial-value: 8%; }
+@property --b3x { syntax: "<percentage>"; inherits: true; initial-value: 88%; }
+@property --b3y { syntax: "<percentage>"; inherits: true; initial-value: 78%; }
+@property --b4x { syntax: "<percentage>"; inherits: true; initial-value: 22%; }
+@property --b4y { syntax: "<percentage>"; inherits: true; initial-value: 96%; }
+@property --b5x { syntax: "<percentage>"; inherits: true; initial-value: 52%; }
+@property --b5y { syntax: "<percentage>"; inherits: true; initial-value: 42%; }
 
 :root, body::before, body::after {
   --backdrop:
-    radial-gradient(28vmax 28vmax at var(--b1x) var(--b1y), rgb(138 77 250 / .55), transparent 70%),
-    radial-gradient(24vmax 22vmax at var(--b2x) var(--b2y), light-dark(rgb(255 122 196 / .45), rgb(214 51 160 / .40)), transparent 70%),
-    radial-gradient(30vmax 26vmax at var(--b3x) var(--b3y), light-dark(rgb(92 156 255 / .42), rgb(37 99 235 / .38)), transparent 70%),
-    radial-gradient(26vmax 24vmax at var(--b4x) var(--b4y), light-dark(rgb(163 116 255 / .50), rgb(88 20 199 / .50)), transparent 70%),
-    radial-gradient(18vmax 16vmax at var(--b5x) var(--b5y), light-dark(rgb(255 196 140 / .30), rgb(111 36 234 / .25)), transparent 70%),
+    radial-gradient(28vmax 28vmax at var(--b1x) var(--b1y), light-dark(rgb(138 77 250 / .70), rgb(138 77 250 / .72)), transparent 70%),
+    radial-gradient(24vmax 22vmax at var(--b2x) var(--b2y), light-dark(rgb(255 110 190 / .62), rgb(226 58 170 / .60)), transparent 70%),
+    radial-gradient(30vmax 26vmax at var(--b3x) var(--b3y), light-dark(rgb(80 150 255 / .58), rgb(40 110 245 / .58)), transparent 70%),
+    radial-gradient(26vmax 24vmax at var(--b4x) var(--b4y), light-dark(rgb(150 100 255 / .60), rgb(100 30 215 / .65)), transparent 70%),
+    radial-gradient(18vmax 16vmax at var(--b5x) var(--b5y), light-dark(rgb(255 180 110 / .50), rgb(20 190 200 / .40)), transparent 70%),
     light-dark(var(--pearl-100), var(--jet-900));
 }
 
-/* Theme selection: host theme, then the app's own Day / Night switch */
-:root[data-theme="light"] { color-scheme: light; }
-:root[data-theme="dark"] { color-scheme: dark; }
-:root[data-mode="day"] { color-scheme: light; }
-:root[data-mode="night"] { color-scheme: dark; }
+/* Theme selection: host theme, then the app's own Day / Night switch.
+   --backdrop-blend follows the theme: on a light page overlapping blobs multiply
+   (pink over blue turns violet), on a dark page they screen (they add up to a lighter mix). */
+:root { --backdrop-blend: multiply; }
+@media (prefers-color-scheme: dark) { :root { --backdrop-blend: screen; } }
+:root[data-theme="light"] { color-scheme: light; --backdrop-blend: multiply; }
+:root[data-theme="dark"] { color-scheme: dark; --backdrop-blend: screen; }
+:root[data-mode="day"] { color-scheme: light; --backdrop-blend: multiply; }
+:root[data-mode="night"] { color-scheme: dark; --backdrop-blend: screen; }
 
 /* Touch screens get larger targets */
 @media (pointer: coarse) {

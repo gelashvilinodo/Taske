@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, Noto_Sans_Georgian } from 'next/font/google';
 import '@/styles/tokens.css';
 import '@/styles/app.css';
+import { BackdropDrift } from '@/components/shell/BackdropDrift';
 
 const sans = Noto_Sans_Georgian({ subsets: ['latin', 'georgian'], weight: ['400', '500', '600', '700'], variable: '--font-noto-sans' });
 const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex-mono' });
@@ -32,7 +33,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <BackdropDrift />
+        {children}
+      </body>
     </html>
   );
 }
