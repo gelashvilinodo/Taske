@@ -117,6 +117,10 @@ body:has(.shell) { padding-bottom: max(var(--shell-pad), env(safe-area-inset-bot
 html:has(.shell), body:has(.shell) { overflow: hidden; }
 /* iPhone app: the page itself is as tall as the screen, so nothing below it is left unpainted */
 html:has(.shell) { min-height: calc(100dvh + var(--vh-gap)); background: var(--color-bg); }
+/* With html painting the page colour, body's own background would no longer pass to the
+   canvas: it would paint over the backdrop blobs (body::before, z-index -1) and hide them.
+   Keep body clear so the drifting colour shows through the glass. */
+body:has(.shell) { background: transparent; }
 
 .rail {
   position: sticky; top: calc(var(--shell-pad) + var(--safe-top));
