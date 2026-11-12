@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import TaskCard from './TaskCard';
@@ -23,6 +23,7 @@ const EDGE_PX = 44;
 const EDGE_FIRST_MS = 550;
 const EDGE_REPEAT_MS = 950;
 const SCROLL_ZONE = 90;  // auto-scroll the page near the top/bottom
+const LAND_MS = 240;     // the ghost gliding into its new spot on release
 
 type Handler = (id: string, index: number) => void;
 export interface DragState {
@@ -34,6 +35,7 @@ export interface DragState {
   index: number;                 // insert position in that zone
   edge: -1 | 0 | 1;              // pointer at a screen edge
   edgeSteps: number;             // edge steps taken during this hold
+  landing?: boolean;             // released: the ghost is gliding into the gap
 }
 
 interface Ctx {
@@ -164,16 +166,27 @@ export default function TaskDragProvider({ children }: { children: ReactNode }) 
       window.removeEventListener('touchmove', blockTouch);
       window.removeEventListener('contextmenu', blockMenu, true);
       document.documentElement.classList.remove('is-dragging-task');
-      cleanup.current = null;
       const state = live.current;
-      live.current = null;
-      setDrag(null);
-      if (!active || !state) return;
+      const done = () => {
+        cleanup.current = null;
+        live.current = null;
+        setDrag(null);
+        if (drop && state?.zone) handlers.current.get(state.zone)?.(state.id, state.index);
+      };
+      if (!active || !state) { done(); return; }
       // The release can produce a click on whatever is under the pointer; ignore it.
       const swallow = (ev: Event) => { ev.preventDefault(); ev.stopPropagation(); };
       window.addEventListener('click', swallow, true);
       setTimeout(() => window.removeEventListener('click', swallow, true), 350);
-      if (drop && state.zone) handlers.current.get(state.zone)?.(state.id, state.index);
+      // Glide the ghost into the gap it opened, then make the move. The gap and the hidden
+      // source card stay until then, so nothing jumps.
+      const slot = drop && state.zone && handlers.current.has(state.zone) ? document.querySelector<HTMLElement>('.drop-slot') : null;
+      const r = slot?.getBoundingClientRect();
+      const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!r || still || r.bottom < 0 || r.top > innerHeight) { done(); return; }
+      update({ landing: true, edge: 0, x: r.left + state.offX, y: r.top + state.offY, w: r.width });
+      cleanup.current = () => { clearTimeout(landTimer); done(); };
+      const landTimer = setTimeout(done, LAND_MS);
     };
     const onUp = (ev: PointerEvent) => { if (ev.pointerId === pointerId) finish(true); };
     const onCancel = (ev: PointerEvent) => { if (ev.pointerId === pointerId) finish(false); };
@@ -198,7 +211,7 @@ export default function TaskDragProvider({ children }: { children: ReactNode }) 
     <DragCtx.Provider value={value}>
       {children}
       {drag && task && createPortal(
-        <div className="drag-ghost" style={{ width: drag.w, transform: `translate(${drag.x - drag.offX}px, ${drag.y - drag.offY}px)` }} aria-hidden="true">
+        <div className={'drag-ghost' + (drag.landing ? ' is-landing' : '')} style={{ '--land-ms': LAND_MS + 'ms', width: drag.w, transform: `translate(${drag.x - drag.offX}px, ${drag.y - drag.offY}px)` } as CSSProperties} aria-hidden="true">
           <TaskCard t={task} ghost />
         </div>,
         document.body,

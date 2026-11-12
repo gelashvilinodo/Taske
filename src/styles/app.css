@@ -14,6 +14,8 @@ html { -webkit-text-size-adjust: 100%; }
 html, body { margin: 0; }
 /* While a modal window is open, the page behind it stays put */
 html:has(dialog[open]), html:has(dialog[open]) body { overflow: hidden; overscroll-behavior: none; }
+/* Keep the scrollbar's space when scrolling is locked, so nothing shifts sideways as a window opens */
+html { scrollbar-gutter: stable; }
 body {
   min-height: 100vh;
   min-height: 100dvh;
@@ -81,13 +83,9 @@ a { color: inherit; }
   -webkit-backdrop-filter: var(--glass-filter);
   backdrop-filter: var(--glass-filter);
 }
-/* The header and window only ever sit over the backdrop, which is already soft gradients,
-   so they keep the colour boost but not the blur. Blur works per element and smears each
-   one's edge differently, which made the two show a colour step where they join. */
-.window, .top {
-  -webkit-backdrop-filter: saturate(var(--glass-saturate));
-  backdrop-filter: saturate(var(--glass-saturate));
-}
+/* The window's glass sits on its own layer (.window::before), so the window doesn't
+   become a closed-off group for the blur at its top edge (.window-blur) */
+.window { -webkit-backdrop-filter: none; backdrop-filter: none; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root {
     --glass-bg: light-dark(var(--pearl-50), var(--jet-800));
@@ -135,6 +133,8 @@ html:has(.shell), body:has(.shell) { overflow: hidden; }
   box-shadow: var(--shadow-glow), inset 0 1px 0 rgb(255 255 255 / .35);
 }
 .rail-items { position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--space-1-5); flex: 1; }
+/* Settings lives in the page list (so the blob can slide to it) but sits at the bottom */
+.rail-settings { margin-top: auto; }
 .rail-foot { display: flex; flex-direction: column; align-items: center; gap: var(--space-1-5); }
 .rail-item {
   position: relative;
@@ -147,8 +147,8 @@ html:has(.shell), body:has(.shell) { overflow: hidden; }
 }
 .rail-item:hover { background: var(--panel-bg-hover); color: var(--color-ink); }
 .rail-item > * { position: relative; z-index: 1; }
-.rail-item[aria-current="page"], .rail-more.is-current { color: var(--color-on-accent); background: transparent; }
-.rail-item[aria-current="page"]:hover, .rail-more.is-current:hover { background: transparent; color: var(--color-on-accent); }
+.rail-item[aria-current="page"] { color: var(--color-on-accent); background: transparent; }
+.rail-item[aria-current="page"]:hover { background: transparent; color: var(--color-on-accent); }
 
 /* The blob: one glowing shape that slides to the active page and squishes on the way */
 .rail-blob {
@@ -175,7 +175,8 @@ html:has(.shell), body:has(.shell) { overflow: hidden; }
 }
 
 /* "More" arrow and its sheet exist for phones only */
-.rail-more, .rail-sheet { display: none; }
+.rail-add, .top .burger, .mmenu { display: none; }
+.rail-blob.is-off { opacity: 0; }
 .rail-label { display: none; }
 /* Tooltip label on hover (mouse only) */
 @media (hover: hover) and (min-width: 768px) {
@@ -194,34 +195,61 @@ html:has(.shell), body:has(.shell) { overflow: hidden; }
   .rail-item:hover::after, .rail-item:focus-visible::after { opacity: 1; transform: translate(0, -50%); }
 }
 
-/* The column: the header stays put on top; everything under it scrolls in .page-scroll.
-   The scroll area starts right at the header's bottom edge, so the browser itself cuts
-   content off there: nothing ever shows above or through the header, and nothing lags. */
+/* The column: the header on top, then the window filling the rest of the screen. The
+   window itself never moves; its content scrolls inside it (.page-scroll). */
 .main-col {
-  --merge-gap: var(--space-3);
   min-width: 0; min-height: 0;
-  display: flex; flex-direction: column;
-}
-.page-scroll {
-  --side-room: var(--shell-gap);
-  --bottom-room: max(var(--shell-pad), env(safe-area-inset-bottom, 0px));
-  flex: 1; min-height: 0;
-  overflow-x: hidden; overflow-y: auto;
-  overscroll-behavior: contain;
-  /* Reach out to the screen edges so shadows aren't cut and the scrollbar sits at the side */
-  margin: 0 calc(-1 * var(--side-room)) calc(-1 * var(--bottom-room));
-  padding: var(--merge-gap) var(--side-room) var(--bottom-room);
+  display: flex; flex-direction: column; gap: var(--space-3);
 }
 .window {
-  min-width: 0;
-  min-height: 100%;
-  display: grid; align-content: start; gap: var(--space-5);
-  padding: var(--window-pad);
+  position: relative;
+  flex: 1; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
   background: var(--window-bg);
   border: var(--border-width) solid var(--glass-border);
   border-radius: var(--radius-2xl);
   box-shadow: var(--glass-highlight), var(--shadow-lg);
-  transition: border-radius var(--dur-slow) var(--ease), border-color var(--dur-slow) var(--ease);
+}
+.window::before {
+  content: ""; position: absolute; inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+}
+.page-scroll {
+  position: relative;
+  flex: 1; min-height: 0;
+  overflow-x: hidden; overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--window-pad);
+}
+
+/* Progressive blur along the window's top edge. Content scrolling up passes under it and
+   goes soft gradually, fully hazy at the edge. Exactly as tall as the window's padding,
+   so at rest it covers only empty space. Three stacked layers, each blurring more and
+   reaching less far; no colour of their own. */
+.window-blur {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  height: var(--window-pad);
+  pointer-events: none;
+}
+.window-blur i { position: absolute; inset: 0; }
+.window-blur i:nth-child(1) {
+  -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 30%, transparent 100%);
+}
+.window-blur i:nth-child(2) {
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 15%, transparent 65%);
+  mask-image: linear-gradient(to bottom, #000 15%, transparent 65%);
+}
+.window-blur i:nth-child(3) {
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 35%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 35%);
 }
 
 .app {
@@ -232,81 +260,19 @@ html:has(.shell), body:has(.shell) { overflow: hidden; }
 .app > *, .toolbar > * { min-width: 0; }
 
 /* ---------- Window header ---------- */
-/* The header is its own glass bar above the scroll area. When the window scrolls up and
-   touches it (.main-col.is-merged), the corners between them flatten and the seam fades,
-   so the two read as one surface. */
-.top-wrap { position: relative; z-index: 2; flex: none; }
+/* Its own glass bar above the window */
 .top {
+  flex: none;
   display: flex; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-4); flex-wrap: wrap;
   padding: var(--space-4) var(--window-pad);
   background: var(--window-bg);
   border: var(--border-width) solid var(--glass-border);
   border-radius: var(--radius-2xl);
   box-shadow: var(--glass-highlight), var(--shadow-lg);
-  transition:
-    border-radius var(--dur-slow) var(--ease),
-    border-color var(--dur-slow) var(--ease),
-    box-shadow var(--dur-slow) var(--ease);
 }
-.main-col.is-merged .top {
-  border-bottom-left-radius: 0; border-bottom-right-radius: 0;
-  border-bottom-color: transparent;
-  /* Keep the top shine of --glass-highlight, drop its dark bottom edge so no seam shows */
-  box-shadow:
-    inset 0 1px 0 light-dark(rgb(255 255 255 / 1), rgb(255 255 255 / .18)),
-    inset 0 12px 16px -12px light-dark(rgb(255 255 255 / .7), rgb(255 255 255 / .06));
-}
-.main-col.is-merged .window {
-  border-top-left-radius: 0; border-top-right-radius: 0;
-  border-top-color: transparent;
-}
-
-/* Progressive blur under the header's edge: three stacked layers, each blurring more and
-   reaching less far down, so content goes soft gradually and is fully hazy as it slips
-   under the header. Pinned to the top of the scroll area; shown only once merged. No
-   colour of its own, so the header and window keep exactly the same tint.
-   Sticky stops at the scroll area's top padding (the gap before merging), so the
-   negative top pulls it up flush with the header's bottom edge. */
-.page-fade {
-  position: sticky; top: calc(-1 * var(--merge-gap)); z-index: 3;
-  height: var(--space-12); margin-bottom: calc(-1 * var(--space-12));
-  pointer-events: none;
-}
-.page-fade i {
-  position: absolute; inset: 0 var(--border-width);
-  opacity: 0;
-  transition: opacity var(--dur-slow) var(--ease);
-}
-.page-fade i:nth-child(1) {
-  -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 30%, transparent 100%);
-}
-.page-fade i:nth-child(2) {
-  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 15%, transparent 65%);
-  mask-image: linear-gradient(to bottom, #000 15%, transparent 65%);
-}
-.page-fade i:nth-child(3) {
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 35%);
-  mask-image: linear-gradient(to bottom, #000 0%, transparent 35%);
-}
-.main-col.is-merged .page-fade i { opacity: 1; }
-.page-head { min-width: 0; }
+.page-head { min-width: 0; display: flex; align-items: center; gap: var(--space-3); }
 .page-head h1 { margin: 0; font: var(--weight-bold) var(--text-2xl) / var(--leading-tight) var(--font-display); letter-spacing: -.02em; }
-.page-head p { margin: var(--space-1) 0 0; font-size: var(--text-sm); color: var(--color-muted); }
 .top-right { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
-.conn {
-  display: inline-flex; align-items: center; gap: var(--space-1-5);
-  min-height: var(--control-md); padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
-  background: var(--panel-bg); border: var(--border-width) solid var(--panel-border);
-  font-size: var(--text-xs); color: var(--color-muted);
-}
-.conn i { width: 8px; height: 8px; border-radius: 50%; background: var(--color-faint); flex: none; }
-.conn.live i { background: var(--color-ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ok) 22%, transparent); }
-.conn.bad i { background: var(--color-bad); }
 .round-btn {
   display: inline-grid; place-items: center;
   width: var(--control-md); height: var(--control-md);
@@ -446,6 +412,25 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
   -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 .add-dlg .input { background: light-dark(rgb(255 255 255 / .5), rgb(0 0 0 / .22)); }
+/* Description and subtasks grow open: the window gets taller smoothly and, being centred, grows up and down at once */
+.add-details {
+  display: grid; grid-template-rows: 0fr; opacity: 0;
+}
+.add-details.is-open { grid-template-rows: 1fr; opacity: 1; }
+.add-details-inner { min-height: 0; overflow: hidden; }
+/* Padding keeps the fields' focus ring inside the clipped area */
+.add-details .details-row { margin: var(--space-3) -4px 0; padding: 0 4px 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  .add-details {
+    transition: grid-template-rows var(--dur-slow) cubic-bezier(.25, .8, .25, 1), opacity var(--dur-slow) var(--ease);
+  }
+  /* One calm motion on open: fade in while growing slightly from the centre */
+  .add-dlg[open] { animation: add-in 260ms cubic-bezier(.2, .8, .2, 1) both; }
+  .add-dlg[open]::backdrop { animation: fade-in 260ms ease-out; }
+}
+@keyframes add-in { from { opacity: 0; scale: .96; } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes sheet-in { from { translate: 0 100%; } }
 /* Very short screens: the window scrolls instead, and its dropdowns fit inside it */
 @media (max-height: 560px) { .add-dlg { overflow: auto; } }
 .add-head { display: flex; align-items: center; gap: var(--space-2-5); }
@@ -558,8 +543,37 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
 /* Day dots: phone-only pager above the swipeable days */
 .week-dots { display: none; }
 /* Weekend columns are a touch quieter so the working days lead */
-.column.is-weekend:not(.is-today) { background: color-mix(in srgb, var(--panel-bg) 60%, transparent); border-style: dashed; }
+.column.is-weekend:not(.is-today) { background: color-mix(in srgb, var(--panel-bg) 60%, transparent); }
 .column.is-weekend .col-name { color: var(--color-muted); }
+/* While a dragged card slides the days into a neighbouring week, the board becomes one sideways strip
+   (also on wide screens, seven days to a view) and a line with the week's dates marks each new week. */
+@media (min-width: 1800px) {
+  .week.is-strip {
+    grid-template-columns: none; grid-auto-flow: column;
+    grid-auto-columns: calc((100% - 6 * var(--week-gap)) / 7);
+    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+  }
+  .week.is-strip::-webkit-scrollbar { display: none; }
+  .week.is-strip .column { scroll-snap-align: start; }
+}
+.week .column.week-break { position: relative; overflow: visible; }
+.week .column.week-break::before {
+  content: ""; position: absolute; top: 0; bottom: 0;
+  left: calc(-1 * var(--week-gap) / 2 - 1px); width: 2px; border-radius: 2px;
+  background: linear-gradient(180deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 15%, transparent));
+}
+.week .column.week-break::after {
+  content: attr(data-week); position: absolute; top: var(--space-3); left: calc(-1 * var(--week-gap) / 2);
+  transform: translateX(-50%) rotate(180deg); writing-mode: vertical-rl;
+  z-index: 1; white-space: nowrap; pointer-events: none;
+  padding: var(--space-2) 2px; border-radius: var(--radius-pill);
+  font: var(--weight-semibold) var(--text-2xs) / 1.3 var(--font-data);
+  color: var(--color-accent-ink); background: var(--color-bg);
+  border: var(--border-width) solid var(--color-accent);
+  animation: week-break-in var(--dur, .2s) var(--ease, ease) both;
+}
+@keyframes week-break-in { from { opacity: 0; translate: 0 -4px; } }
 .status-board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); align-items: stretch; }
 .column {
   display: flex; flex-direction: column; gap: var(--space-1-5);
@@ -613,11 +627,12 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
 .card[data-task-id] { touch-action: manipulation; }
 @media (pointer: fine) { .card[data-task-id] { cursor: grab; } }
 @media (pointer: coarse) { .card { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } }
-.card.is-drag-source { display: none; }
+/* The picked-up card leaves its list (beats the board's `.week .card { display: flex }`) */
+article.card.is-drag-source { display: none; }
 .drop-slot {
   flex: none;
   border-radius: var(--radius-lg);
-  border: 1.5px dashed color-mix(in srgb, var(--color-accent) 70%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--color-accent) 70%, transparent);
   background: var(--color-accent-soft);
   animation: slot-open var(--dur) var(--ease);
 }
@@ -635,6 +650,12 @@ textarea.input { resize: none; overflow: hidden; display: block; line-height: va
   animation: lift var(--dur) var(--ease-spring);
 }
 @keyframes lift { from { transform: none; box-shadow: none; } }
+/* On release the ghost glides into the gap it opened, flattening as it lands */
+.drag-ghost.is-landing { transition: transform var(--land-ms, 240ms) var(--ease), width var(--land-ms, 240ms) var(--ease); }
+.drag-ghost.is-landing .card {
+  transform: none; box-shadow: var(--glass-highlight);
+  transition: transform var(--land-ms, 240ms) var(--ease), box-shadow var(--land-ms, 240ms) var(--ease);
+}
 html.is-dragging-task, html.is-dragging-task * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
 
 .card-title {
@@ -721,12 +742,10 @@ span.status, span.prio { box-shadow: none; }
 span.status { cursor: default; }
 button.status::after, button.prio::after { content: "\25BE"; font-size: .9em; opacity: .7; }
 
-.prio.none { border-style: dashed; }
 .prio.pr-urgent { background: color-mix(in srgb, var(--color-bad) 15%, transparent); border-color: transparent; color: var(--color-bad); }
 .prio.pr-high { background: color-mix(in srgb, var(--color-warn) 15%, transparent); border-color: transparent; color: var(--color-warn); }
 .prio.pr-low { background: var(--color-sunk); border-color: transparent; color: var(--color-muted); }
 
-.cmt-btn { border-style: dashed; }
 .cmt-btn.has { border-style: solid; color: var(--color-ink); }
 
 /* Subtasks */
@@ -739,13 +758,54 @@ button.status::after, button.prio::after { content: "\25BE"; font-size: .9em; op
 .sub-toggle b { font: var(--weight-medium) var(--text-2xs) var(--font-data); font-variant-numeric: tabular-nums; }
 .sub-toggle .meter { flex: 1; width: auto; height: 4px; }
 .sub-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-0-5); }
-.sub-item label { display: flex; align-items: flex-start; gap: var(--space-1-5); font-size: var(--text-xs); line-height: var(--leading-snug); overflow-wrap: anywhere; min-width: 0; cursor: pointer; }
-.sub-item input { margin: 2px 0 0; width: 13px; height: 13px; accent-color: var(--color-accent); flex: none; }
-.sub-item.is-done span { text-decoration: line-through; color: var(--color-muted); }
+.sub-item {
+  display: flex; align-items: flex-start; gap: var(--space-1-5); min-width: 0;
+  font-size: var(--text-xs); line-height: var(--leading-snug);
+}
+.sub-title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.sub-item.is-done .sub-title, .gate-list .is-done .sub-title { text-decoration: line-through; color: var(--color-muted); }
+.sub-row.is-done .input { text-decoration: line-through; color: var(--color-muted); }
+
+/* Round subtask checkbox: its colour and mark follow the subtask's status (same colours as the status pills) */
+.sub-check {
+  --sc: var(--color-faint);
+  all: unset; box-sizing: border-box; flex: none; position: relative;
+  display: grid; place-items: center;
+  width: 16px; height: 16px; margin-top: 1px;
+  border-radius: 50%;
+  border: 1.5px solid var(--sc);
+  color: var(--color-on-accent);
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.sub-check:not(:disabled):hover { transform: scale(1.12); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sc) 16%, transparent); }
+.sub-check:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.sub-check:disabled { cursor: default; }
+.sub-check svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.sub-check.s-todo { --sc: var(--color-faint); }
+.sub-check.s-doing { --sc: var(--color-accent); background: linear-gradient(90deg, var(--sc) 50%, transparent 50%); background-clip: content-box; padding: 2px; }
+.sub-check.s-done { --sc: var(--color-ok); background: var(--sc); }
+.sub-check.s-canceled { --sc: var(--color-faint); background: var(--sc); }
+@media (prefers-reduced-motion: no-preference) {
+  .sub-check.s-done svg path { stroke-dasharray: 12; animation: tick-draw 220ms var(--ease) both; }
+}
+@keyframes tick-draw { from { stroke-dashoffset: 12; } }
+/* Small priority flag beside a subtask (urgent red, high amber, low grey; none = faint flag only) */
+.prio.sub-prio { min-height: 20px; padding: 0 var(--space-1-5); gap: 3px; flex: none; font-size: var(--text-2xs); }
+.prio.sub-prio.none { color: var(--color-faint); }
+span.prio.sub-prio { min-height: 0; padding: 0 3px; align-self: center; border: 0; background: none; }
+.sub-item.is-done .sub-prio { opacity: .55; }
+/* Small status pill beside a subtask */
+.status.sub-status { min-height: 20px; padding: 0 var(--space-1-5) 0 var(--space-1); gap: var(--space-1); flex: none; font-size: var(--text-2xs); }
+.status.sub-status::before { width: 6px; height: 6px; }
 .sub-edit { display: grid; gap: var(--space-1-5); }
 .sub-edit:empty { display: none; }
-.sub-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; }
-.sub-row input[type="checkbox"] { accent-color: var(--color-accent); margin: 0; width: 16px; height: 16px; }
+.sub-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; gap: var(--space-1-5); align-items: center; }
+.sub-row .sub-check { margin: 0; width: 18px; height: 18px; }
+.sub-row .sub-status { width: 96px; }
+.sub-row .sub-prio { width: 78px; }
+.sub-row .sub-prio::after { margin-left: auto; }
+.sub-row .sub-status::after { margin-left: auto; }
 .sub-del {
   width: var(--control-md); height: var(--control-md);
   border: 0; background: transparent; color: var(--color-muted);
@@ -765,6 +825,19 @@ button.status::after, button.prio::after { content: "\25BE"; font-size: .9em; op
 .cmt-del:hover, .cmt-del.armed { color: var(--color-bad); }
 .cmt-new { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1-5); align-items: end; }
 .cmt-new textarea { overflow: auto; }
+/* The comments panel slides open under the card's chips, and slides shut again */
+.cmts-wrap { display: grid; grid-template-rows: 1fr; min-width: 0; animation: cmts-open var(--dur-slow) var(--ease); }
+.cmts-wrap.is-closing { animation: cmts-close var(--dur) var(--ease) forwards; }
+.cmts-inner { min-height: 0; min-width: 0; overflow: hidden; }
+.cmts-inner > .cmts { animation: cmts-rise var(--dur-slow) var(--ease); }
+@keyframes cmts-open { from { grid-template-rows: 0fr; opacity: 0; } }
+@keyframes cmts-close { to { grid-template-rows: 0fr; opacity: 0; } }
+@keyframes cmts-rise { from { translate: 0 -6px; } }
+/* Send is just the arrow icon, tinted when there is something to send */
+.cmt-send { flex: none; color: var(--color-accent-ink); }
+@media (prefers-reduced-motion: reduce) {
+  .cmts-wrap, .cmts-inner > .cmts { animation-duration: 1ms; }
+}
 
 /* ---------- Month view ---------- */
 .month { display: grid; gap: var(--space-2); }
@@ -791,6 +864,7 @@ button.status::after, button.prio::after { content: "\25BE"; font-size: .9em; op
 /* ---------- Overlays ---------- */
 #menu {
   position: fixed; z-index: var(--z-menu);
+  inset: auto; margin: 0; overflow: visible; color: var(--color-ink); /* undo the browser's popover defaults */
   min-width: 170px;
   display: grid; gap: 1px;
   padding: var(--space-1);
@@ -849,6 +923,62 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 .dlg-foot { display: flex; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; padding-top: var(--space-1); }
 .dlg-foot div { display: flex; gap: var(--space-2); }
 .dlg-foot .ghost { min-height: var(--control-md); padding-inline: var(--space-4); }
+
+/* Task preview: opened by clicking a task; read it and work through its subtasks */
+dialog#preview { --dialog-w: 600px; }
+.pv { gap: var(--space-3-5); }
+.pv-head { display: flex; align-items: center; gap: var(--space-1-5); flex-wrap: wrap; }
+.pv-spacer { flex: 1; }
+.pv-edit { min-height: var(--control-sm); padding-inline: var(--space-3); }
+.dlg h3.pv-title { font-size: var(--text-xl, var(--text-lg)); overflow-wrap: anywhere; white-space: pre-line; }
+.pv-title.is-closed { text-decoration: line-through; color: var(--color-muted); }
+.pv-sec { display: grid; gap: var(--space-2); }
+.pv-sec h4 {
+  display: flex; align-items: center; gap: var(--space-1-5); margin: 0;
+  font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--color-muted);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.pv-sec h4 svg { flex: none; }
+.pv-sec h4 .meter { flex: 1; width: auto; height: 4px; max-width: 160px; }
+.pv-count { font: var(--weight-medium) var(--text-2xs) var(--font-data); font-variant-numeric: tabular-nums; color: var(--color-ink); letter-spacing: 0; }
+.pv-desc { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal, 1.55); white-space: pre-line; overflow-wrap: anywhere; }
+.pv-subs {
+  gap: 2px; padding: var(--space-1);
+  background: var(--color-sunk); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-md);
+}
+.pv-subs .sub-item { align-items: center; padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-sm); font-size: var(--text-sm); }
+.pv-subs .sub-item:hover { background: var(--panel-bg-hover, var(--color-accent-soft)); }
+.pv-subs .sub-check { width: 18px; height: 18px; margin: 0; }
+/* Pills line up in two columns */
+.pv-subs .sub-prio { width: 78px; }
+.pv-subs .sub-status { width: 104px; }
+.pv-subs .sub-prio::after, .pv-subs .sub-status::after { margin-left: auto; }
+.pv .cmts { border-top: 0; padding-top: 0; }
+.pv-foot { border-top: var(--border-width) solid var(--color-line); padding-top: var(--space-3); align-items: center; }
+.pv-foot .primary { min-height: var(--control-md); padding-inline: var(--space-4); }
+
+/* Asked before moving a task with open subtasks to Done */
+dialog.gate { --dialog-w: 440px; }
+.gate-title svg { color: var(--color-warn); }
+.gate-text { margin: 0; font-size: var(--text-sm); line-height: var(--leading-snug); color: var(--color-muted); }
+.gate-list {
+  list-style: none; margin: 0; padding: var(--space-1-5);
+  display: grid; gap: var(--space-0-5);
+  max-height: 40dvh; overflow: auto;
+  background: var(--color-sunk); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-md);
+}
+.gate-list .sub-item {
+  padding: var(--space-1) var(--space-1-5); border-radius: var(--radius-sm);
+  font-size: var(--text-sm); cursor: pointer;
+}
+.gate-list .sub-item:hover { background: var(--color-accent-soft); }
+.gate-list .sub-check { margin-top: 2px; }
+.primary:disabled { opacity: 0.45; cursor: not-allowed; filter: none; transform: none; }
+.gate-hint {
+  display: flex; align-items: center; gap: var(--space-1-5); margin: var(--space-1) 0 0;
+  font-size: var(--text-xs); color: var(--color-warn);
+}
+.gate-hint svg { flex: none; }
 
 #toast {
   position: fixed; left: 50%; transform: translateX(-50%);
@@ -922,7 +1052,7 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 .pj-count { font-size: var(--text-xs); color: var(--color-muted); }
 .pj-meter { width: 70%; height: 4px; margin-top: var(--space-1); }
 .pj-meter i { background: var(--c); }
-.pj-new { border-style: dashed; border-color: var(--color-line-strong); background: transparent; }
+.pj-new { border-color: var(--color-line-strong); background: transparent; }
 .pj-new-icon {
   display: grid; place-items: center; width: 64px; height: 64px; margin-bottom: var(--space-1);
   border-radius: 18px; color: var(--color-accent-ink);
@@ -968,7 +1098,7 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 .pick.is-open .pick-chev { transform: rotate(180deg); }
 .pick-none {
   flex: none; width: 20px; height: 20px; border-radius: 6px;
-  border: 1.5px dashed var(--color-line-strong);
+  border: 1.5px solid var(--color-line-strong);
 }
 .pick-list {
   position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: var(--z-menu);
@@ -1092,7 +1222,7 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   display: grid; gap: var(--space-2); max-width: 680px;
   padding: var(--space-8) var(--space-6);
   background: var(--panel-bg);
-  border: var(--border-width) dashed var(--color-line-strong);
+  border: var(--border-width) solid var(--color-line-strong);
   border-radius: var(--radius-xl);
   box-shadow: var(--glass-highlight);
 }
@@ -1111,9 +1241,10 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   .column { padding: var(--space-3); }
 }
 
-/* Seven columns only fit comfortably on very wide screens. Below that, Monday to Friday
-   fill the board and Saturday and Sunday sit one sideways scroll away. Snaps per day. */
-@media (max-width: 2099px) and (min-width: 768px) {
+/* All seven days fit from 1800px wide (a 1920 monitor gets the whole week, ~230px a day).
+   Below that, Monday to Friday fill the board and Saturday and Sunday sit one sideways
+   scroll away. Snaps per day. */
+@media (max-width: 1799px) and (min-width: 768px) {
   .week {
     --week-days: 5;
     grid-template-columns: none;
@@ -1128,6 +1259,8 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
     scroll-padding-inline: var(--window-pad);
   }
   .week .column { scroll-snap-align: start; }
+}
+@media (min-width: 768px) {
   /* Cards lay out wide rather than tall: the chips and the status buttons share a row when they fit */
   .week .card { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1-5) var(--space-1); }
   .week .card > * { flex: 1 1 100%; }
@@ -1138,8 +1271,6 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 
 /* lg: laptops. The add form tightens */
 @media (max-width: 1279px) {
-  .conn span { display: none; }
-  .conn { width: var(--control-md); padding: 0; justify-content: center; }
   /* Small laptops: four days at a time keeps each card wider than it is tall */
   .week { --week-days: 4; }
 }
@@ -1160,24 +1291,25 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 @media (max-width: 767px) {
   body:has(.shell) { padding: 0; }
   .shell { display: block; height: 100dvh; }
-  .main-col { --merge-gap: var(--space-2); height: 100%; }
+  .main-col { gap: var(--space-2); height: 100%; }
+  .main-col { padding-top: calc(var(--space-2) + var(--safe-top)); }
+  .window { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: 0; }
   .page-scroll {
-    --side-room: 0px;
+    padding-left: max(var(--window-pad), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--window-pad), env(safe-area-inset-right, 0px));
     /* Room to scroll the last card clear of the bottom tab bar */
-    --bottom-room: calc(var(--tabbar-h) + var(--space-4) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--tabbar-h) + var(--space-4) + env(safe-area-inset-bottom, 0px));
   }
+  /* A card of its own, floating clear of the screen edges (and below the status bar) */
   .top {
-    border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
-    border-top: 0;
-    /* Clear the status bar with room to spare, so the page title never sits under the clock */
-    padding-top: calc(var(--space-4) + var(--safe-top));
-    padding-left: max(var(--window-pad), env(safe-area-inset-left, 0px));
-    padding-right: max(var(--window-pad), env(safe-area-inset-right, 0px));
+    flex-wrap: nowrap;
+    margin-inline: max(var(--space-2), env(safe-area-inset-left, 0px)) max(var(--space-2), env(safe-area-inset-right, 0px));
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-2);
+    border-radius: var(--radius-xl);
   }
-  .window {
-    padding-left: max(var(--window-pad), env(safe-area-inset-left, 0px));
-    padding-right: max(var(--window-pad), env(safe-area-inset-right, 0px));
-  }
+  .top .page-head { gap: var(--space-2); }
+  .top .add-task-btn { display: none; }
+  .top .burger { display: inline-grid; flex: none; }
   .rail {
     position: fixed; top: auto; left: var(--space-2); right: var(--space-2);
     bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
@@ -1204,53 +1336,58 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   .rail-items.is-dragging .rail-item.is-under svg { transform: translateY(-1px) scale(1.08); }
   .rail-item svg { transition: transform var(--dur-fast) var(--ease); }
   .rail-extra, .rail-foot { display: none; }
-  .rail-more { display: flex; }
-  .rail-more svg { transition: transform var(--dur-slow) var(--ease-spring); }
-  .rail-more.is-open svg { transform: rotate(180deg); }
-  .rail-more.is-open:not(.is-current) { background: var(--panel-bg-hover); color: var(--color-ink); }
+  /* "Add task" in the middle of the bar */
+  .rail-add {
+    display: grid; place-items: center; flex: none; align-self: center;
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 0; padding: 0; cursor: pointer;
+    background: var(--gradient-accent); color: var(--color-on-accent);
+    box-shadow: var(--btn-depth-accent), var(--shadow-glow);
+    transition: transform var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease);
+  }
+  .rail-add:active { transform: scale(.93); }
+  .rail-add:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
-  .rail-sheet {
-    position: absolute; right: var(--space-1); bottom: calc(100% + var(--space-2-5));
-    display: grid; gap: 2px;
-    min-width: 220px;
-    padding: var(--space-1-5);
+  /* Burger menu: full screen, slides in from the left; Sign out pinned to the bottom */
+  .mmenu {
+    position: fixed; inset: 0; z-index: 60;
+    display: flex; flex-direction: column;
+    padding: calc(var(--space-3) + var(--safe-top)) max(var(--space-4), env(safe-area-inset-right, 0px))
+      calc(var(--space-4) + env(safe-area-inset-bottom, 0px)) max(var(--space-4), env(safe-area-inset-left, 0px));
     background: var(--glass-bg-strong);
     -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
-    border: var(--border-width) solid var(--glass-border);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--glass-highlight), var(--shadow-lg);
-    transform-origin: calc(100% - 30px) 100%;
-    opacity: 0; visibility: hidden;
-    transform: translateY(16px) scale(.86);
-    transition: opacity var(--dur) var(--ease), transform var(--dur-slow) var(--ease), visibility 0s linear var(--dur-slow);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform var(--dur-slow) var(--ease), visibility 0s linear var(--dur-slow);
   }
-  .rail-sheet.is-open {
-    opacity: 1; visibility: visible; transform: none;
-    transition: opacity var(--dur) var(--ease), transform var(--blob-dur) var(--ease-spring), visibility 0s;
-  }
-  .rail-sheet-item {
-    all: unset; box-sizing: border-box; cursor: pointer;
+  .mmenu.is-open { transform: none; visibility: visible; transition: transform var(--dur-slow) var(--ease), visibility 0s; }
+  .mmenu-head { display: flex; align-items: center; justify-content: space-between; padding: var(--space-1) 0 var(--space-4); }
+  .mmenu-title { font: var(--weight-bold) var(--text-xl) / var(--leading-tight) var(--font-display); letter-spacing: -.02em; }
+  .mmenu-list { flex: 1; min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: var(--space-1); }
+  .mmenu-foot { flex: none; padding-top: var(--space-3); border-top: var(--border-width) solid var(--panel-border); }
+  .mmenu-item {
+    all: unset; box-sizing: border-box; cursor: pointer; width: 100%;
     display: flex; align-items: center; gap: var(--space-3);
-    min-height: 48px; padding: var(--space-1-5) var(--space-3) var(--space-1-5) var(--space-1-5);
-    border-radius: var(--radius-md);
-    font-size: var(--text-md); font-weight: var(--weight-medium);
-    opacity: 0; transform: translateY(10px);
+    min-height: 60px; padding: var(--space-2);
+    border-radius: var(--radius-lg);
+    opacity: 0; transform: translateX(-16px);
     transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease), background-color var(--dur-fast) var(--ease);
   }
-  .rail-sheet.is-open .rail-sheet-item {
-    opacity: 1; transform: none;
-    transition-delay: calc(60ms + var(--i) * 50ms), calc(60ms + var(--i) * 50ms), 0s;
-  }
-  .rail-sheet-item:active, .rail-sheet-item:hover { background: var(--panel-bg-hover); }
-  .rail-sheet-item:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
-  .rail-sheet-item[aria-current="page"] { background: var(--color-accent-soft); color: var(--color-accent-ink); }
-  .rail-sheet-icon {
-    display: grid; place-items: center; width: 36px; height: 36px; flex: none;
-    border-radius: var(--radius-sm);
+  .mmenu.is-open .mmenu-item { opacity: 1; transform: none; transition-delay: calc(80ms + var(--i, 0) * 50ms), calc(80ms + var(--i, 0) * 50ms), 0s; }
+  .mmenu-foot .mmenu-item { --i: 3; }
+  .mmenu-item:active, .mmenu-item:hover { background: var(--panel-bg-hover); }
+  .mmenu-item:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+  .mmenu-item[aria-current="page"] { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+  .mmenu-icon {
+    display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+    border-radius: var(--radius-md);
     background: var(--panel-bg); box-shadow: inset 0 0 0 1px var(--panel-border);
   }
-  .rail-sheet-item[aria-current="page"] .rail-sheet-icon { background: var(--gradient-accent); color: var(--color-on-accent); box-shadow: var(--shadow-glow); }
-  .rail-sheet-item.is-danger { color: var(--color-bad); }
+  .mmenu-item[aria-current="page"] .mmenu-icon { background: var(--gradient-accent); color: var(--color-on-accent); box-shadow: var(--shadow-glow); }
+  .mmenu-text { display: grid; gap: 2px; min-width: 0; }
+  .mmenu-text b { font-size: var(--text-md); font-weight: var(--weight-semibold); }
+  .mmenu-text small { font-size: var(--text-xs); color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mmenu-item.is-danger { color: var(--color-bad); }
 
   .page-head h1 { font-size: var(--text-xl); }
   .toolbar { flex-direction: column; align-items: stretch; flex-wrap: nowrap; }
@@ -1305,6 +1442,9 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 
   .week-dots {
     display: flex; justify-content: center; align-items: center; gap: var(--space-1-5);
+    /* Fixed to the active pill's height, so the row doesn't shrink for a moment while the
+       pill moves to another day (which made the day panel below jump up and down). */
+    height: 24px; flex: none;
     margin-bottom: calc(-1 * var(--space-1));
   }
   .week-dot {
@@ -1338,6 +1478,8 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 /* xs: narrow phones */
 @media (max-width: 479px) {
   .soon { padding: var(--space-5) var(--space-4); }
+  /* New task window: the sheet slides up from the bottom edge */
+  .add-dlg[open] { animation-name: sheet-in; }
   /* New task window: buttons share the full width at the bottom of the sheet */
   .add-foot { flex-direction: column; align-items: stretch; }
   .add-foot > div { display: grid; grid-template-columns: 1fr 1.6fr; }
@@ -1361,7 +1503,7 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 /* Touch screens: bigger text in fields so iOS does not zoom in */
 @media (pointer: coarse) {
   .input { font-size: var(--text-input-touch); }
-  .sub-item input { width: 18px; height: 18px; }
+  .sub-item .sub-check { width: 18px; height: 18px; }
 }
 
 /* ---------- Motion ---------- */
@@ -1374,14 +1516,18 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
   }
   dialog[open] { animation: rise var(--dur-slow) var(--ease); }
   #menu:not([hidden]) { animation: pop var(--dur) var(--ease); }
-  .app > * { animation: rise var(--dur) var(--ease) both; }
-  .app > :nth-child(2) { animation-delay: 40ms; }
-  .app > :nth-child(3) { animation-delay: 80ms; }
-  .app > :nth-child(n+4) { animation-delay: 120ms; }
+  /* Page sections rise in one after another. Windows (dialogs) living in .app are left out:
+     a delay on them would show the window, hide it, then animate it in. */
+  .app > :not(dialog) { animation: rise var(--dur) var(--ease) both; }
+  .app > :not(dialog):nth-child(2) { animation-delay: 40ms; }
+  .app > :not(dialog):nth-child(3) { animation-delay: 80ms; }
+  .app > :not(dialog):nth-child(n+4) { animation-delay: 120ms; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rail-blob.is-animated { transition: none; }
   .rail-blob.is-animated .rail-blob-core { animation: none; }
+  .mmenu, .mmenu.is-open, .mmenu-item, .mmenu.is-open .mmenu-item { transition: none; }
+  .rail, .rail-label, .rail-item svg, .rail-add { transition: none !important; }
 }
 @keyframes rise { from { opacity: 0; transform: translateY(12px) scale(.98); } }
 @keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
@@ -1396,3 +1542,243 @@ dialog::backdrop { background: var(--color-scrim); -webkit-backdrop-filter: blur
 .col-add, .sub-del { display: inline-grid; place-items: center; }
 .tasks-table th button { display: inline-flex; align-items: center; gap: 3px; }
 :is(.ghost, .primary, .danger, .more, .field > span, .fieldset-label, .radios label, .tasks-table th button, .sub-toggle) svg { flex: none; }
+
+/* ---------- Settings page ---------- */
+.settings { display: grid; gap: var(--space-4); }
+.settings-group { padding: var(--space-5); display: grid; gap: var(--space-4); }
+.settings-group h2 { margin: 0; font: var(--weight-semibold) var(--text-lg) / var(--leading-tight) var(--font-display); }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-4); flex-wrap: wrap; }
+.settings-row-text { min-width: 0; flex: 1 1 16rem; }
+.settings-row .seg { flex: none; }
+.settings-row-text strong { display: block; font-weight: var(--weight-medium); }
+.settings-row-text span { display: block; margin-top: var(--space-0-5); font-size: var(--text-sm); color: var(--color-muted); }
+.theme-seg { position: relative; isolation: isolate; padding: 4px; }
+.theme-seg button {
+  position: relative; z-index: 1;
+  min-height: var(--control-md);
+  padding: var(--space-1-5) var(--space-4);
+  font-size: var(--text-md);
+  display: inline-flex; align-items: center; gap: var(--space-1-5);
+  transition: color var(--dur) var(--ease);
+}
+.theme-seg button svg { transition: transform var(--dur-slow) var(--ease-spring); }
+/* The thumb paints the pressed look, so the button itself stays clear */
+.theme-seg button[aria-pressed="true"] { background: transparent; box-shadow: none; }
+.theme-seg button[aria-pressed="true"] svg { transform: rotate(-12deg) scale(1.12); }
+.seg-thumb {
+  position: absolute; top: 4px; bottom: 4px; left: 0; z-index: 0;
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+}
+.seg-thumb.is-animated {
+  transition: transform var(--dur-slow) var(--ease-spring), width var(--dur-slow) var(--ease-spring);
+}
+.seg-thumb-core {
+  position: absolute; inset: 0; border-radius: inherit;
+  background: var(--gradient-accent);
+  box-shadow: var(--btn-depth-accent), var(--shadow-glow);
+}
+.seg-thumb.is-animated .seg-thumb-core { animation: seg-squish var(--dur-slow) var(--ease) both; }
+@keyframes seg-squish {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.08, .9); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seg-thumb.is-animated, .theme-seg button svg { transition: none; }
+  .seg-thumb.is-animated .seg-thumb-core { animation: none; }
+}
+
+/* ---------- Board: one page scroll ----------
+   The board scrolls with the rest of the page: stats, week bar, day names and tasks all move
+   together and leave the window as you go down. With only a few tasks the day panels still
+   stretch to the window's bottom edge. Each day is a panel (.column, spanning both rows) with its
+   name in the top row; the tasks of all days sit in one row (.week-scroll) below the names.
+   Sideways, the panels, names and tasks are in the same horizontal scroller and move as one. */
+.app:has(> .week) { display: flex; flex-direction: column; min-height: 100%; }
+.app > .week { flex: 1 0 auto; min-height: 340px; }
+.week { --col-pad: var(--space-2-5); grid-template-rows: auto 1fr; row-gap: 0; }
+.week > .column { min-height: 0; padding: 0; }
+.week > .day-head { position: relative; min-width: 0; padding: var(--col-pad) var(--col-pad) 0; }
+.week-scroll {
+  position: relative; min-width: 0; min-height: 0;
+  display: grid; grid-template-columns: subgrid; grid-auto-rows: minmax(100%, auto);
+  padding-block: var(--space-3);
+}
+.day-tasks { display: flex; flex-direction: column; min-width: 0; padding: 0 var(--col-pad) var(--col-pad); }
+@media (min-width: 1440px) { .week { --col-pad: var(--space-3); } }
+@media (max-width: 767px) {
+  .week { --col-pad: var(--space-4); }
+  .week > .column { min-height: 0; }
+}
+
+/* ==========================================================================
+   Fit and finish across screen sizes
+   (kept last so it settles the earlier per-component rules)
+   ========================================================================== */
+
+/* Settings is a short form: on a wide monitor it keeps a readable width instead of a
+   thin line stretched across the screen. */
+.settings { max-width: 760px; }
+
+/* ---------- Touch screens: phones and tablets ----------
+   Every control gets a finger-sized target. The look stays compact; where a control
+   is drawn small on purpose, an invisible area around it takes the tap. */
+@media (pointer: coarse) {
+  /* Status, priority and comment pills on cards: 34px tall (--control-xs), readable text */
+  .status, .prio, .cmt-btn { font-size: var(--text-xs); padding-inline: var(--space-2-5); }
+  .card-foot, .meta { gap: var(--space-1-5); }
+  .week .card { row-gap: var(--space-2); }
+  /* Read-only labels (table, previews) aren't buttons, so they keep their small size */
+  span.status, span.prio { min-height: 24px; }
+  /* Pills inside the task window line up in a list, so they can be a little shorter */
+  .status.sub-status, .prio.sub-prio { min-height: 32px; font-size: var(--text-xs); }
+  .pv-subs .sub-status { width: 112px; }
+  .pv-subs .sub-prio { width: 86px; }
+  .pv-subs .sub-item { min-height: 44px; }
+  /* Round subtask checkbox: bigger, and the tap area reaches past its edge */
+  .sub-check { width: 22px; height: 22px; }
+  .sub-row .sub-check, .pv-subs .sub-check, .sub-item .sub-check { width: 22px; height: 22px; }
+  .sub-check::before { content: ""; position: absolute; inset: -11px; }
+  /* Text buttons ("More", "Description and subtasks", "Subtasks 1/3") */
+  .more { min-height: 40px; padding-inline: var(--space-1); }
+  .card .more { min-height: 32px; }
+  .sub-toggle { padding-block: var(--space-2); margin-block: calc(-1 * var(--space-1)); }
+  .cmt-del { min-height: 32px; padding-inline: var(--space-2); }
+  /* Round helpers in pickers and dialogs */
+  .dlg-x { width: var(--control-md); height: var(--control-md); }
+  .cal-nav { width: var(--control-sm); height: var(--control-sm); }
+  .date-clear { width: 32px; height: 32px; }
+  .swatch { width: 36px; height: 36px; }
+  .col-add { width: var(--control-sm); height: var(--control-sm); }
+  .tasks-table th button { padding-block: var(--space-2); }
+  /* Hover-lift makes no sense under a finger and leaves cards stuck "raised" after a tap */
+  .card:hover, .pj-tile:hover { transform: none; }
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 767px) {
+
+  /* ---- Bottom tab bar: a capsule like the Day / Night switch ----
+     Each page is an equal slot with its icon over its label; the active page sits on a
+     glowing pill. Scrolling down the page shrinks the bar (lower, narrower, icons only);
+     scrolling up or tapping it grows it back. */
+  .rail {
+    left: max(var(--space-3), env(safe-area-inset-left, 0px));
+    right: max(var(--space-3), env(safe-area-inset-right, 0px));
+    padding: 5px;
+    border-radius: var(--radius-pill);
+    transition: left var(--dur-slow) var(--ease-spring), right var(--dur-slow) var(--ease-spring),
+      height var(--dur-slow) var(--ease-spring), bottom var(--dur-slow) var(--ease-spring);
+  }
+  .rail-items { justify-content: stretch; align-items: stretch; gap: 2px; }
+  .rail-item {
+    flex: 1 1 0; min-width: 0; width: auto; height: auto;
+    gap: 3px; padding: 0 2px;
+    border-radius: var(--radius-pill);
+  }
+  .rail-item svg { width: 22px; height: 22px; transition: transform var(--dur-slow) var(--ease-spring), width var(--dur-slow) var(--ease), height var(--dur-slow) var(--ease); }
+  .rail-item[aria-current="page"] { font-weight: var(--weight-semibold); }
+  .rail-blob { border-radius: var(--radius-pill); }
+  .rail-label {
+    font-size: 12px; line-height: 1.1; font-weight: inherit;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-height: 16px;
+    transition: opacity var(--dur) var(--ease), max-height var(--dur-slow) var(--ease);
+  }
+  .rail-add {
+    width: 50px; height: 50px; margin-inline: 3px;
+    transition: transform var(--dur-fast) var(--ease), width var(--dur-slow) var(--ease-spring), height var(--dur-slow) var(--ease-spring);
+  }
+
+  /* Shrunk */
+  .rail.is-compact {
+    height: var(--tabbar-h-compact);
+    left: max(13%, var(--space-3)); right: max(13%, var(--space-3));
+    padding: 4px;
+    cursor: pointer;
+  }
+  .rail.is-compact .rail-label { opacity: 0; max-height: 0; }
+  .rail.is-compact .rail-item { gap: 0; }
+  .rail.is-compact .rail-item svg { width: 20px; height: 20px; }
+  .rail.is-compact .rail-add { width: 36px; height: 36px; }
+  .rail.is-compact .rail-add svg { width: 18px; height: 18px; }
+
+  /* The four week numbers sit in one compact row, so the day's tasks start higher up */
+  .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-1-5); }
+  .stat {
+    grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto;
+    justify-items: center; text-align: center; row-gap: 2px;
+    padding: var(--space-2-5) var(--space-1) var(--space-3);
+    border-radius: var(--radius-lg);
+  }
+  .stat-icon { display: none; }
+  .stat-value { font-size: var(--text-xl); }
+  .stat-label { max-width: 100%; white-space: nowrap; font-size: var(--text-2xs); display: inline-flex; align-items: center; gap: 4px; }
+  .stat-label::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--tone); }
+  .stat-extra { display: none; }
+  .stat .meter { left: var(--space-2-5); right: var(--space-2-5); bottom: 5px; }
+
+  /* Theme switch: four equal buttons across the full width, icon over the label */
+  .settings-row .theme-seg { flex: 1 1 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .theme-seg button {
+    flex-direction: column; justify-content: center; gap: 3px;
+    min-height: 58px; padding: var(--space-1-5) var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .settings-group { padding: var(--space-4); }
+
+  /* Week / month switcher: the small "WEEK 46 · 2026" line stays on one line */
+  .period .eyebrow { white-space: nowrap; letter-spacing: .02em; }
+  .nav .ghost { padding-inline: var(--space-3); }
+
+  /* Table: each task becomes a card; the column headers become a row of sort buttons */
+  .table-wrap { overflow: visible; background: none; border: 0; border-radius: 0; box-shadow: none; }
+  .tasks-table, .tasks-table thead, .tasks-table tbody { display: block; }
+  .tasks-table thead tr {
+    display: flex; gap: var(--space-1-5);
+    overflow-x: auto; scrollbar-width: none;
+    margin: 0 calc(-1 * var(--window-pad)) var(--space-3); padding: 2px var(--window-pad);
+  }
+  .tasks-table thead tr::-webkit-scrollbar { display: none; }
+  .tasks-table th { position: static; flex: none; padding: 0; border: 0; background: none; }
+  .tasks-table th:last-child { display: none; } /* Subtasks can't be sorted */
+  .tasks-table th button {
+    min-height: var(--control-sm); padding: 0 var(--space-3);
+    border: var(--border-width) solid var(--panel-border); border-radius: var(--radius-pill);
+    background: var(--panel-bg); color: var(--color-muted); font-size: var(--text-xs);
+  }
+  .tasks-table th[aria-sort] button {
+    background: var(--color-accent-soft); color: var(--color-accent-ink);
+    border-color: color-mix(in srgb, var(--color-accent) 40%, transparent); font-weight: var(--weight-semibold);
+  }
+  .tasks-table tbody { display: grid; gap: var(--space-2); }
+  .tasks-table tbody tr {
+    position: relative;
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1-5) var(--space-2);
+    padding: var(--space-3) var(--space-3-5);
+    background: var(--color-card);
+    border: var(--border-width) solid var(--panel-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--glass-highlight), var(--shadow-sm);
+  }
+  .tasks-table th, .tasks-table td { border: 0; }
+  .tasks-table td { padding: 0; }
+  .tasks-table td.t-title { flex: 1 1 100%; min-width: 0; margin-bottom: var(--space-0-5); }
+  .tasks-table .card-title { font-size: var(--text-md); }
+  /* The whole card opens the task, not just its title */
+  .tasks-table .card-title::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+  .tasks-table td.is-empty { display: none; }
+  .tasks-table td.num { font-size: var(--text-xs); color: var(--color-muted); }
+  .tasks-table td[data-label]::before { content: attr(data-label) " "; color: var(--color-faint); font-family: var(--font-ui); }
+  .tasks-table tbody tr:hover td { background: none; }
+}
+
+/* Narrow phones: in the task window each subtask's title gets the full line, and its
+   priority and status pills sit on a second line under it (lined up with the title) */
+@media (max-width: 479px) {
+  .pv-subs .sub-item { flex-wrap: wrap; row-gap: var(--space-1-5); padding-block: var(--space-2); }
+  .pv-subs .sub-title { flex: 1 1 calc(100% - 40px); }
+  .pv-subs .sub-prio { margin-left: calc(22px + var(--space-1-5)); }
+  .pv-subs .sub-status { flex: 1 1 auto; max-width: 140px; }
+}

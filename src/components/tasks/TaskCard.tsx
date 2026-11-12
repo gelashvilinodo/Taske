@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { addDays, commentTime, DAYS_S, iso, parse, shortDate, today, weekday } from '@/lib/dates';
-import { closed, PRIORITIES, prioName, STATUSES, statusName, type Task } from '@/lib/tasks/model';
+import { closed, PRIORITIES, prioName, STATUSES, statusName, subProgress, type Task } from '@/lib/tasks/model';
 import { ProjectChip, projectStyle } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { IconCalendar, IconChevronDown, IconChevronRight, IconClock, IconComment, IconFlag, IconSend, IconSubtasks } from '@/components/shell/icons';
 import MenuButton from './MenuButton';
 import { useTaskDrag } from './TaskDrag';
+import SubtaskGate, { hasOpenSubs } from './SubtaskGate';
+import SubtaskList from './SubtaskList';
 
 function DeadlineChip({ t }: { t: Task }) {
   if (!t.deadline) return null;
@@ -36,33 +38,20 @@ function Description({ text }: { text: string }) {
 function Subtasks({ t, writable }: { t: Task; writable: boolean }) {
   const { patchTask } = useWorkspace();
   const [open, setOpen] = useState(false);
-  const n = t.subtasks.length;
-  if (!n) return null;
-  const done = t.subtasks.filter(s => s.done).length;
+  if (!t.subtasks.length) return null;
+  const { done, total } = subProgress(t.subtasks);
   return (
     <>
       <button className="sub-toggle" type="button" aria-expanded={open} onClick={() => setOpen(o => !o)}>
-        <IconSubtasks size={14} /><span>Subtasks</span><b>{done}/{n}</b>{open ? <IconChevronDown size={13} /> : <IconChevronRight size={13} />}
-        <span className="meter"><i style={{ width: Math.round(done / n * 100) + '%' }} /></span>
+        <IconSubtasks size={14} /><span>Subtasks</span><b>{done}/{total}</b>{open ? <IconChevronDown size={13} /> : <IconChevronRight size={13} />}
+        <span className="meter"><i style={{ width: (total ? Math.round(done / total * 100) : 100) + '%' }} /></span>
       </button>
-      {open && (
-        <ul className="sub-list">
-          {t.subtasks.map(s => (
-            <li key={s.id} className={'sub-item' + (s.done ? ' is-done' : '')}>
-              <label>
-                <input type="checkbox" checked={s.done} disabled={!writable}
-                  onChange={() => patchTask(t.id, { subtasks: t.subtasks.map(x => (x.id === s.id ? { ...x, done: !x.done } : x)) })} />
-                <span>{s.title}</span>
-              </label>
-            </li>
-          ))}
-        </ul>
-      )}
+      {open && <SubtaskList subs={t.subtasks} onChange={writable ? subtasks => patchTask(t.id, { subtasks }) : undefined} />}
     </>
   );
 }
 
-function Comments({ t, writable, focusSignal }: { t: Task; writable: boolean; focusSignal: number }) {
+export function Comments({ t, writable, focusSignal }: { t: Task; writable: boolean; focusSignal: number }) {
   const { comments, names, account, mode, addComment, removeComment } = useWorkspace();
   const [draft, setDraft] = useState('');
   const [armed, setArmed] = useState<string | null>(null);
@@ -98,26 +87,36 @@ function Comments({ t, writable, focusSignal }: { t: Task; writable: boolean; fo
           <textarea ref={box} className="input" rows={1} placeholder="Write a comment" aria-label="Write a comment" value={draft}
             onChange={e => setDraft(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} />
-          <button className="ghost" type="button" onClick={send}><IconSend size={15} />Send</button>
+          <button className="icon-btn cmt-send" type="button" aria-label="Send comment" title="Send" onClick={send}><IconSend size={16} /></button>
         </div>
       )}
     </div>
   );
 }
 
+export { DeadlineChip };
+
 /** One task on the board. `showDay` adds the day chip (used where cards are not grouped by day). */
 export default function TaskCard({ t, showDay = false, ghost = false }: { t: Task; showDay?: boolean; ghost?: boolean }) {
-  const { readOnly, patchTask, openEditor, comments, projectById } = useWorkspace();
+  const { readOnly, patchTask, openPreview, comments, projectById } = useWorkspace();
   const { drag, begin } = useTaskDrag();
   const writable = !readOnly && !ghost;
   const lifted = !ghost && drag?.id === t.id;
   const project = projectById(t.project);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentsShown, setCommentsShown] = useState(false); // stays true while the panel animates shut
   const [focusSignal, setFocusSignal] = useState(0);
+  const [gate, setGate] = useState(false); // asking to finish subtasks before moving to Done
   const n = (comments[t.id] || []).length;
   const d = parse(t.day);
 
-  const openComments = () => { setCommentsOpen(true); setFocusSignal(x => x + 1); };
+  // Once closed, keep the panel mounted for its slide-shut animation (--dur, 200ms), then drop it.
+  useEffect(() => {
+    if (commentsOpen || !commentsShown) return;
+    const t = setTimeout(() => setCommentsShown(false), 220);
+    return () => clearTimeout(t);
+  }, [commentsOpen, commentsShown]);
+  const openComments = () => { setCommentsOpen(true); setCommentsShown(true); setFocusSignal(x => x + 1); };
 
   return (
     <article
@@ -126,9 +125,9 @@ export default function TaskCard({ t, showDay = false, ghost = false }: { t: Tas
       data-task-id={ghost ? undefined : t.id}
       onPointerDown={writable ? e => begin(e, t.id) : undefined}
     >
-      {writable
-        ? <button className="card-title" type="button" onClick={() => openEditor(t.id)}>{t.title}</button>
-        : <span className="card-title">{t.title}</span>}
+      {ghost
+        ? <span className="card-title">{t.title}</span>
+        : <button className="card-title" type="button" onClick={() => openPreview(t.id)}>{t.title}</button>}
       <Description text={t.description} />
       <Subtasks t={t} writable={writable} />
       <div className="meta">
@@ -140,7 +139,11 @@ export default function TaskCard({ t, showDay = false, ghost = false }: { t: Tas
         {writable ? (
           <MenuButton className={'status s-' + t.status} title="Change status" ariaLabel={'Status: ' + statusName(t.status) + '. Click to change'}
             items={STATUSES} current={t.status}
-            onPick={id => { if (id === 'done') openComments(); patchTask(t.id, { status: id as Task['status'] }); }}>
+            onPick={id => {
+              if (id === 'done' && hasOpenSubs(t.subtasks)) { setGate(true); return; }
+              if (id === 'done') openComments();
+              patchTask(t.id, { status: id as Task['status'] });
+            }}>
             {statusName(t.status)}
           </MenuButton>
         ) : <span className={'status s-' + t.status}>{statusName(t.status)}</span>}
@@ -159,7 +162,16 @@ export default function TaskCard({ t, showDay = false, ghost = false }: { t: Tas
           </button>
         )}
       </div>
-      {commentsOpen && <Comments t={t} writable={writable} focusSignal={focusSignal} />}
+      {gate && (
+        <SubtaskGate subtasks={t.subtasks} onCancel={() => setGate(false)}
+          onConfirm={subtasks => { setGate(false); openComments(); patchTask(t.id, { status: 'done', subtasks }); }} />
+      )}
+      {commentsShown && (
+        // Slides open (and shut) by animating its height; unmounts once it has closed.
+        <div className={'cmts-wrap' + (commentsOpen ? '' : ' is-closing')}>
+          <div className="cmts-inner"><Comments t={t} writable={writable} focusSignal={focusSignal} /></div>
+        </div>
+      )}
     </article>
   );
 }

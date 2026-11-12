@@ -11,7 +11,10 @@ const TASK_COLUMNS: Record<keyof TaskFields, string> = {
 function toRow(fields: TaskPatch) {
   const row: Record<string, unknown> = {};
   (Object.keys(fields) as (keyof TaskFields)[]).forEach(k => {
-    row[TASK_COLUMNS[k]] = k === 'deadline' && !fields[k] ? null : fields[k];
+    row[TASK_COLUMNS[k]] = k === 'deadline' && !fields[k] ? null
+      // `done` is kept beside `status` so older versions of the app still read subtasks correctly.
+      : k === 'subtasks' && fields.subtasks ? fields.subtasks.map(s => ({ ...s, done: s.status === 'done' }))
+      : fields[k];
   });
   return row;
 }

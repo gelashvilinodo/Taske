@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { isDate } from '@/lib/dates';
-import { makeSubs, PRIORITIES, STATUSES, type PriorityId, type StatusId, type Subtask } from '@/lib/tasks/model';
+import { makeSubs, PRIORITIES, sortSubs, STATUSES, subClosed, toggledSub, type PriorityId, type StatusId, type Subtask } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import ProjectSelect from '@/components/projects/ProjectSelect';
 import DatePicker from '@/components/ui/DatePicker';
-import { IconCalendar, IconClock, IconClose, IconDescription, IconDoing, IconDone, IconEdit, IconFlag, IconPlus, IconSave, IconSubtasks, IconTodo, IconTrash } from '@/components/shell/icons';
+import SubtaskGate, { hasOpenSubs } from './SubtaskGate';
+import { SubCheck, SubPrioMenu, SubStatusMenu } from './SubtaskList';
+import { IconAlert, IconCalendar, IconClock, IconClose, IconDescription, IconDoing, IconDone, IconEdit, IconFlag, IconPlus, IconSave, IconSubtasks, IconTodo, IconTrash } from '@/components/shell/icons';
 
 /** Small status glyph inside the status radio buttons; canceled keeps text only. */
 const StatusIcon = ({ id }: { id: string }) => (id === 'todo' ? <IconTodo size={14} /> : id === 'doing' ? <IconDoing size={14} /> : id === 'done' ? <IconDone size={14} /> : <IconClose size={14} />);
@@ -23,13 +25,15 @@ export default function TaskEditor() {
   const newSubInput = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [armed, setArmed] = useState(false);
+  const [gate, setGate] = useState<Subtask[] | null>(null); // open subtasks to finish before saving as Done
 
   useEffect(() => {
     const t = tasks.find(x => x.id === editingId);
     if (!editingId || !t) { if (dialog.current?.open) dialog.current.close(); return; }
     if (dialog.current?.open) return;
     setDraft({
-      title: t.title, description: t.description, subtasks: t.subtasks.map(s => ({ ...s })), newSub: '',
+      // Rows start in the same order as everywhere else (status, then priority) and stay put while you edit.
+      title: t.title, description: t.description, subtasks: sortSubs(t.subtasks).map(s => ({ ...s })), newSub: '',
       status: t.status, priority: t.priority, project: t.project, day: t.day, deadline: t.deadline,
     });
     setArmed(false);
@@ -46,18 +50,28 @@ export default function TaskEditor() {
     newSubInput.current?.focus();
   };
 
+  const finalSubs = (d: Draft) => d.subtasks.concat(makeSubs(d.newSub))
+    .map(s => ({ id: s.id, title: s.title.trim().slice(0, 300), status: s.status, priority: s.priority }))
+    .filter(s => s.title);
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!draft || !editingId) return;
+    if (!draft) return;
+    const subs = finalSubs(draft);
+    // Done needs every subtask ticked: ask first instead of saving.
+    if (draft.status === 'done' && hasOpenSubs(subs)) { setGate(subs); return; }
+    save(draft, subs);
+  };
+
+  const save = (draft: Draft, subtasks: Subtask[]) => {
+    if (!editingId) return;
     const title = draft.title.trim();
     if (!title || !isDate(draft.day)) return;
     patchTask(editingId, {
       title: title.slice(0, 500),
       description: draft.description.trim().slice(0, 5000),
       priority: draft.priority,
-      subtasks: draft.subtasks.concat(makeSubs(draft.newSub))
-        .map(s => ({ id: s.id, title: s.title.trim().slice(0, 300), done: !!s.done }))
-        .filter(s => s.title),
+      subtasks,
       project: projects.some(p => p.id === draft.project) ? draft.project : '',
       status: draft.status,
       day: draft.day,
@@ -73,7 +87,10 @@ export default function TaskEditor() {
     if (id) { removeTask(id); toast('Task deleted'); }
   };
 
+  const openSubs = draft ? draft.subtasks.filter(s => s.title.trim() && !subClosed(s)).length + makeSubs(draft.newSub).length : 0;
+
   return (
+    <>
     <dialog id="editor" ref={dialog} onClose={e => { if (e.target === e.currentTarget) openEditor(null); }}>
       {draft && (
         <form className="dlg" autoComplete="off" onSubmit={submit}>
@@ -89,12 +106,13 @@ export default function TaskEditor() {
             <span className="fieldset-label"><IconSubtasks size={14} />Subtasks</span>
             <div className="sub-edit">
               {draft.subtasks.map((s, i) => (
-                <div className="sub-row" key={s.id}>
-                  <input type="checkbox" aria-label="Done" checked={s.done}
-                    onChange={e => set({ subtasks: draft.subtasks.map((x, j) => (j === i ? { ...x, done: e.target.checked } : x)) })} />
+                <div className={'sub-row s-' + s.status + (subClosed(s) ? ' is-done' : '')} key={s.id}>
+                  <SubCheck status={s.status} onToggle={() => set({ subtasks: draft.subtasks.map((x, j) => (j === i ? toggledSub(x) : x)) })} />
                   <input className="input" type="text" aria-label="Subtask" value={s.title}
                     onChange={e => set({ subtasks: draft.subtasks.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); newSubInput.current?.focus(); } }} />
+                  <SubPrioMenu priority={s.priority} onPick={priority => set({ subtasks: draft.subtasks.map((x, j) => (j === i ? { ...x, priority } : x)) })} />
+                  <SubStatusMenu status={s.status} onPick={status => set({ subtasks: draft.subtasks.map((x, j) => (j === i ? { ...x, status } : x)) })} />
                   <button className="sub-del" type="button" aria-label="Remove subtask"
                     onClick={() => set({ subtasks: draft.subtasks.filter((_, j) => j !== i) })}><IconClose size={16} /></button>
                 </div>
@@ -114,6 +132,9 @@ export default function TaskEditor() {
                 <label key={s.id}><input type="radio" name="editStatus" value={s.id} checked={draft.status === s.id} onChange={() => set({ status: s.id })} /><StatusIcon id={s.id} />{s.name}</label>
               ))}
             </div>
+            {draft.status === 'done' && openSubs > 0 && (
+              <p className="gate-hint"><IconAlert size={14} />{openSubs === 1 ? '1 subtask is' : openSubs + ' subtasks are'} not done yet. You'll be asked to finish {openSubs === 1 ? 'it' : 'them'} when you save.</p>
+            )}
           </div>
           <div className="field">
             <span className="fieldset-label"><IconFlag size={14} />Priority</span>
@@ -142,5 +163,10 @@ export default function TaskEditor() {
         </form>
       )}
     </dialog>
+    {gate && draft && (
+      <SubtaskGate subtasks={gate} onCancel={() => setGate(null)}
+        onConfirm={subs => { setGate(null); save(draft, subs); }} />
+    )}
+    </>
   );
 }

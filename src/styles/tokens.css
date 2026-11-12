@@ -173,8 +173,8 @@
   --font-data: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* Fluid sizes: smallest value at 360px wide, largest at ~1920px wide */
-  --text-2xs: clamp(10px, 9.6px + .10vw, 11.5px);
-  --text-xs: clamp(11px, 10.5px + .12vw, 12.5px);
+  --text-2xs: clamp(11px, 10.6px + .08vw, 12px);
+  --text-xs: clamp(12px, 11.6px + .08vw, 13px);
   --text-sm: clamp(12px, 11.4px + .15vw, 13.5px);
   --text-md: clamp(13.5px, 12.8px + .18vw, 15.5px);
   --text-lg: clamp(15px, 14px + .30vw, 18px);
@@ -220,7 +220,8 @@
   --rail-w: 68px;
   --window-pad: clamp(16px, 2.2vw, 32px);
   --safe-top: env(safe-area-inset-top, 0px); /* status bar height in the iPhone home-screen app */
-  --tabbar-h: 64px;                       /* phone bottom tab bar */
+  --tabbar-h: 68px;                       /* phone bottom tab bar */
+  --tabbar-h-compact: 50px;               /* the same bar, shrunk while scrolling down */
   --drag-edge-w: clamp(48px, 4vw, 72px);  /* week-switch strip at each screen edge while dragging */
 
   /* ---------- Motion ---------- */
@@ -284,8 +285,8 @@
 /* Touch screens get larger targets */
 @media (pointer: coarse) {
   :root {
-    --control-xs: 30px;
-    --control-sm: 38px;
+    --control-xs: 34px;
+    --control-sm: 40px;
     --control-md: 44px;
   }
 }
@@ -295,6 +296,24 @@
   :root {
     --page-max: 1880px;
     --column-min-h: 220px;
+  }
+}
+/* 27"+ monitors at native resolution (2560 wide and up): use the extra room, and nudge
+   text and controls up a step so nothing reads tiny from a normal desk distance. */
+@media (min-width: 2400px) {
+  :root {
+    --page-max: 2240px;
+    --rail-w: 76px;
+    --text-2xs: 12.5px;
+    --text-xs: 13.5px;
+    --text-sm: 14.5px;
+    --text-md: 16.5px;
+    --text-lg: 19px;
+    --text-xl: 26px;
+    --text-2xl: 34px;
+    --control-sm: 32px;
+    --control-md: 40px;
+    --control-lg: 48px;
   }
 }
 

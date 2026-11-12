@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { DAYS_S, parse, shortDate, weekday } from '@/lib/dates';
-import { closed, compareTasks, prioName, statusName, type Project, type Task } from '@/lib/tasks/model';
+import { closed, compareTasks, prioName, statusName, subProgress, type Project, type Task } from '@/lib/tasks/model';
 import { ProjectChip } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { useVisibleTasks } from '@/components/tasks/Filters';
@@ -27,7 +27,7 @@ const dayLabel = (s: string) => { const d = parse(s); return DAYS_S[weekday(d)] 
 
 /** Table page: every task in one sortable list. */
 export default function TaskTable() {
-  const { loaded, readOnly, openEditor, projectById } = useWorkspace();
+  const { loaded, openPreview, projectById } = useWorkspace();
   const tasks = useVisibleTasks();
   const [sort, setSort] = useState<{ col: Col; dir: 1 | -1 }>({ col: 'day', dir: -1 });
   const rows = [...tasks].sort((a, b) => {
@@ -52,19 +52,19 @@ export default function TaskTable() {
         </thead>
         <tbody>
           {rows.map(t => {
-            const done = t.subtasks.filter(s => s.done).length;
+            const sp = subProgress(t.subtasks);
             return (
               <tr key={t.id} className={closed(t) ? 'is-closed' : undefined}>
                 <td className="t-title">
-                  {readOnly ? <span className="card-title">{t.title}</span>
-                    : <button className="card-title" type="button" onClick={() => openEditor(t.id)}>{t.title}</button>}
+                  <button className="card-title" type="button" onClick={() => openPreview(t.id)}>{t.title}</button>
                 </td>
                 <td><ProjectChip project={projectById(t.project)} /></td>
                 <td><span className={'status s-' + t.status}>{statusName(t.status)}</span></td>
-                <td>{t.priority ? <span className={'prio pr-' + t.priority}>{prioName(t.priority)}</span> : <span className="chip">—</span>}</td>
-                <td className="num">{dayLabel(t.day)}</td>
-                <td className="num">{t.deadline ? dayLabel(t.deadline) : '—'}</td>
-                <td className="num">{t.subtasks.length ? done + '/' + t.subtasks.length : '—'}</td>
+                {/* data-label and is-empty are for phones, where each row becomes a card */}
+                <td className={t.priority ? undefined : 'is-empty'}>{t.priority ? <span className={'prio pr-' + t.priority}>{prioName(t.priority)}</span> : <span className="chip">—</span>}</td>
+                <td className="num" data-label="Day">{dayLabel(t.day)}</td>
+                <td className={'num' + (t.deadline ? '' : ' is-empty')} data-label="Due">{t.deadline ? dayLabel(t.deadline) : '—'}</td>
+                <td className={'num' + (sp.total ? '' : ' is-empty')} data-label="Subtasks">{sp.total ? sp.done + '/' + sp.total : '—'}</td>
               </tr>
             );
           })}

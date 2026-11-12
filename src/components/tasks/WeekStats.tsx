@@ -25,7 +25,7 @@ export default function WeekStats() {
         <div key={c.key} className={'stat stat-' + c.key + (c.key === 'over' && c.value > 0 ? ' is-alert' : '')}>
           <span className="stat-icon"><c.Icon /></span>
           <b className="stat-value">{c.value}</b>
-          <span className="stat-label">{c.key === 'done' ? 'Done · ' + c.label : c.label}</span>
+          <span className="stat-label">{c.key === 'done' ? <>Done<span className="stat-extra"> · {c.label}</span></> : c.label}</span>
           {c.meter !== undefined && <span className="meter" role="img" aria-label={c.meter + '% done'}><i style={{ width: c.meter + '%' }} /></span>}
         </div>
       ))}

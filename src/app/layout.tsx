@@ -3,6 +3,8 @@ import { IBM_Plex_Mono, Noto_Sans_Georgian } from 'next/font/google';
 import '@/styles/tokens.css';
 import '@/styles/app.css';
 import { BackdropDrift } from '@/components/shell/BackdropDrift';
+import AutoTheme from '@/components/settings/AutoTheme';
+import { DAY_START, NIGHT_START } from '@/lib/theme';
 
 const sans = Noto_Sans_Georgian({ subsets: ['latin', 'georgian'], weight: ['400', '500', '600', '700'], variable: '--font-noto-sans' });
 const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex-mono' });
@@ -25,7 +27,8 @@ export const viewport: Viewport = {
 };
 
 // Applies the saved Day/Night choice before first paint so the page does not flash.
-const themeScript = `try{var m=localStorage.getItem('ps.mode');if(m==='day'||m==='night')document.documentElement.dataset.mode=m}catch(e){}`;
+// "auto" picks Day or Night from the clock (see src/lib/theme.ts); AutoTheme keeps it current.
+const themeScript = `try{var m=localStorage.getItem('ps.mode');if(m==='auto'){var h=new Date().getHours();m=h>=${DAY_START}&&h<${NIGHT_START}?'day':'night'}if(m==='day'||m==='night')document.documentElement.dataset.mode=m}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -35,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <BackdropDrift />
+        <AutoTheme />
         {children}
       </body>
     </html>

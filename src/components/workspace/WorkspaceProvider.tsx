@@ -49,6 +49,9 @@ interface Workspace {
   toastMsg: string;
   editingId: string | null;
   openEditor: (id: string | null) => void;
+  /** Task shown in the read-and-tick preview window (opened by clicking a task) */
+  previewId: string | null;
+  openPreview: (id: string | null) => void;
 }
 
 const Ctx = createContext<Workspace | null>(null);
@@ -77,6 +80,7 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
   const [filter, setFilter] = useState('all');
   const [toastMsg, setToastMsg] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const toast = useCallback((msg: string) => {
@@ -237,7 +241,7 @@ export default function WorkspaceProvider({ children }: { children: ReactNode })
     mode: store.kind, account, tasks, projects, projectsReady, projectById, comments, names, loaded, conn, readOnly,
     weekStart, setWeekStart, month, setMonth, filter, setFilter,
     addTasks, patchTask, removeTask, addComment, removeComment, addProject, updateProject, removeProject, signOut,
-    toast, toastMsg, editingId, openEditor: setEditingId,
+    toast, toastMsg, editingId, openEditor: setEditingId, previewId, openPreview: setPreviewId,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

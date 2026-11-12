@@ -4,6 +4,8 @@ import AppHeader from '@/components/shell/AppHeader';
 import Sidebar from '@/components/shell/Sidebar';
 import Toast from '@/components/shell/Toast';
 import TaskEditor from '@/components/tasks/TaskEditor';
+import TaskPreview from '@/components/tasks/TaskPreview';
+import AddTaskHost from '@/components/tasks/AddTaskHost';
 import DragEdges from '@/components/tasks/DragEdges';
 import TaskDragProvider from '@/components/tasks/TaskDrag';
 import { supabaseEnabled } from '@/lib/supabase/config';
@@ -19,15 +21,17 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
         <Sidebar />
         <div className="main-col">
           <AppHeader />
-          <div className="page-scroll">
-            <div className="page-fade" aria-hidden="true"><i /><i /><i /></div>
-            <div className="window">
+          <div className="window">
+            <div className="window-blur" aria-hidden="true"><i /><i /><i /></div>
+            <div className="page-scroll">
               <div className="app">{children}</div>
             </div>
           </div>
         </div>
       </div>
+      <TaskPreview />
       <TaskEditor />
+      <AddTaskHost />
       <DragEdges />
       <Toast />
       </TaskDragProvider>

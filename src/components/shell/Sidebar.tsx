@@ -4,11 +4,10 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, type 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
-import { IconChevronUp, IconLogout } from './icons';
-import { PAGES, pageFor } from './pages';
+import { requestAddOnDay } from '@/components/tasks/AddTaskForm';
+import { IconLogout, IconPlus } from './icons';
+import { PAGES, PHONE_PAGES, pageFor } from './pages';
 
-/** On phones the bar holds this many pages; the rest open from the "more" arrow. */
-const PHONE_PAGES = 4;
 const shortLabel = (label: string) => (label === 'Content calendar' ? 'Content' : label);
 
 type Blob = { x: number; y: number; w: number; h: number; dx: number; dy: number; n: number };
@@ -19,31 +18,53 @@ const isPhone = () => typeof window !== 'undefined' && window.matchMedia('(max-w
 
 /**
  * Icon rail on the left; a bottom tab bar on phones. A glowing "blob" slides and squishes
- * to the active page. On phones only the first four pages sit in the bar; the arrow opens
- * a small sheet with the rest (Table, Projects) and Sign out.
+ * to the active page. On phones only the first four pages sit in the bar, with the "add task"
+ * button in the middle; the rest (Table, Projects, Settings) and Sign out are in the header's
+ * burger menu.
  */
 export default function Sidebar() {
   const path = usePathname();
   const current = pageFor(path).href;
-  const { account, signOut } = useWorkspace();
+  const { account, signOut, readOnly } = useWorkspace();
   const items = useRef<HTMLDivElement>(null);
-  const moreBtn = useRef<HTMLButtonElement>(null);
-  const sheet = useRef<HTMLDivElement>(null);
   const [blob, setBlob] = useState<Blob | null>(null);
-  const [open, setOpen] = useState(false);
+  /** No visible bar item for the page (a burger-menu page on phones): the blob fades out. */
+  const [blobOff, setBlobOff] = useState(false);
   const router = useRouter();
   const [drag, setDrag] = useState<Drag | null>(null);
   const gesture = useRef<{ id: number; startX: number; active: boolean; under: number } | null>(null);
   const swallowClick = useRef(false);
-  const extraActive = PAGES.findIndex(p => p.href === current) >= PHONE_PAGES;
+  /** Phone bar shrunk while reading down the page (Instagram-style); grows back on the way up or on a tap. */
+  const [compact, setCompact] = useState(false);
 
-  // Put the blob under the active page (or under the arrow when the page lives in the sheet).
+  // Phone: watch the window's scroll direction. Down (reading on) shrinks the bar, up grows it.
+  useEffect(() => {
+    const el = document.querySelector<HTMLElement>('.page-scroll');
+    if (!el) return;
+    let last = el.scrollTop;
+    const onScroll = () => {
+      const y = el.scrollTop;
+      if (!isPhone()) { last = y; return; }
+      if (y < 24) setCompact(false);
+      else if (y - last > 8) setCompact(true);
+      else if (last - y > 8) setCompact(false);
+      else return; // small jitter: keep the reference point
+      last = y;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+  // A new page starts with the full bar
+  useEffect(() => setCompact(false), [current]);
+
+  // Put the blob under the active page.
   const place = useCallback(() => {
     const box = items.current;
     if (!box) return;
-    let target = box.querySelector<HTMLElement>('.rail-item[aria-current="page"]');
-    if (!target || target.offsetParent === null) target = moreBtn.current;
-    if (!target || target.offsetParent === null) return;
+    const target = box.querySelector<HTMLElement>('.rail-item[aria-current="page"]');
+    const off = !target || target.offsetParent === null;
+    setBlobOff(off);
+    if (off) return;
     setBlob(prev => {
       const next = { x: target!.offsetLeft, y: target!.offsetTop, w: target!.offsetWidth, h: target!.offsetHeight };
       if (prev && prev.x === next.x && prev.y === next.y && prev.w === next.w && prev.h === next.h) return prev;
@@ -58,25 +79,11 @@ export default function Sidebar() {
     return () => ro.disconnect();
   }, [place]);
 
-  // The sheet closes on navigation, Escape, or a tap anywhere else.
-  useEffect(() => setOpen(false), [current]);
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: PointerEvent) => {
-      const t = e.target as Node;
-      if (!sheet.current?.contains(t) && !moreBtn.current?.contains(t)) setOpen(false);
-    };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); moreBtn.current?.focus(); } };
-    document.addEventListener('pointerdown', away, true);
-    document.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('pointerdown', away, true); document.removeEventListener('keydown', esc); };
-  }, [open]);
-
   // ----- Phone: drag the blob with a finger; release over an item to open it -----
   const targets = () => [...(items.current?.querySelectorAll<HTMLElement>(':scope > .rail-item') ?? [])].filter(el => el.offsetParent !== null);
 
   const onPointerDown = (e: RPointerEvent<HTMLDivElement>) => {
-    if (!isPhone() || !blob || e.button !== 0) return;
+    if (!isPhone() || !blob || e.button !== 0 || compact) return;
     gesture.current = { id: e.pointerId, startX: e.clientX, active: false, under: -1 };
   };
   const onPointerMove = (e: RPointerEvent<HTMLDivElement>) => {
@@ -87,7 +94,6 @@ export default function Sidebar() {
       if (Math.abs(e.clientX - g.startX) < DRAG_START_PX) return;
       g.active = true;
       box.setPointerCapture(e.pointerId);
-      setOpen(false);
     }
     const list = targets();
     if (!list.length) return;
@@ -118,11 +124,8 @@ export default function Sidebar() {
       ...prev, x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight,
       dx: el.offsetLeft - (drag?.x ?? prev.x), dy: 0, n: prev.n + 1,
     });
-    if (el === moreBtn.current) setOpen(true);
-    else {
-      const href = el.getAttribute('href');
-      if (href && href !== current) router.push(href);
-    }
+    const href = el.getAttribute('href');
+    if (href && href !== current) router.push(href);
   };
   const onClickCapture = (e: React.MouseEvent) => {
     if (swallowClick.current) { swallowClick.current = false; e.preventDefault(); e.stopPropagation(); }
@@ -138,25 +141,32 @@ export default function Sidebar() {
   } as CSSProperties) : undefined;
 
   return (
-    <nav className="rail" aria-label="Pages">
+    <nav className={'rail' + (compact ? ' is-compact' : '')} aria-label="Pages"
+      onClickCapture={e => {
+        // A tap on the shrunk bar only grows it back; the next tap picks a page
+        if (!compact) return;
+        e.preventDefault(); e.stopPropagation();
+        setCompact(false);
+      }}>
       <Link className="rail-logo" href="/" aria-label="Taske home"><span aria-hidden="true" /></Link>
       <div className={'rail-items' + (drag ? ' is-dragging' : '')} ref={items}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onClickCapture={onClickCapture}>
-        <span className={'rail-blob' + (blob ? ' is-ready' : '') + (blob && blob.n ? ' is-animated' : '') + (drag ? ' is-dragging' : '')} style={blobStyle} aria-hidden="true">
+        <span className={'rail-blob' + (blob ? ' is-ready' : '') + (blob && blob.n ? ' is-animated' : '') + (blobOff ? ' is-off' : '') + (drag ? ' is-dragging' : '')} style={blobStyle} aria-hidden="true">
           <span className="rail-blob-core" key={blob?.n ?? 0} />
         </span>
         {PAGES.map(({ href, label, Icon }, i) => (
-          <Link key={href} className={'rail-item' + (i >= PHONE_PAGES ? ' rail-extra' : '') + (drag && drag.under === i ? ' is-under' : '')} href={href} draggable={false}
-            aria-current={current === href ? 'page' : undefined} aria-label={label} data-tip={label}>
-            <Icon />
-            <span className="rail-label">{shortLabel(label)}</span>
-          </Link>
+          <React.Fragment key={href}>
+            {/* Phones: "add task" sits in the middle of the bar, between the 2nd and 3rd page */}
+            {i === PHONE_PAGES / 2 && !readOnly && (
+              <button type="button" className="rail-add" aria-label="Add task" onClick={() => requestAddOnDay('')}><IconPlus size={22} /></button>
+            )}
+            <Link className={'rail-item' + (i >= PHONE_PAGES ? ' rail-extra' : '') + (href === '/settings' ? ' rail-settings' : '') + (drag && drag.under === i ? ' is-under' : '')} href={href} draggable={false}
+              aria-current={current === href ? 'page' : undefined} aria-label={label} data-tip={label}>
+              <Icon />
+              <span className="rail-label">{shortLabel(label)}</span>
+            </Link>
+          </React.Fragment>
         ))}
-        <button ref={moreBtn} type="button" className={'rail-item rail-more' + (extraActive ? ' is-current' : '') + (open ? ' is-open' : '') + (drag && drag.under === PHONE_PAGES ? ' is-under' : '')}
-          aria-expanded={open} aria-controls="railSheet" aria-label="More pages" onClick={() => setOpen(o => !o)}>
-          <IconChevronUp />
-          <span className="rail-label">More</span>
-        </button>
       </div>
 
       {account && (
@@ -165,20 +175,6 @@ export default function Sidebar() {
         </div>
       )}
 
-      {/* Phone-only sheet above the bar */}
-      <div id="railSheet" ref={sheet} className={'rail-sheet' + (open ? ' is-open' : '')} aria-hidden={!open} inert={!open}>
-        {PAGES.slice(PHONE_PAGES).map(({ href, label, Icon }, i) => (
-          <Link key={href} href={href} className="rail-sheet-item" style={{ '--i': i } as CSSProperties}
-            aria-current={current === href ? 'page' : undefined}>
-            <span className="rail-sheet-icon"><Icon /></span>{label}
-          </Link>
-        ))}
-        {account && (
-          <button type="button" className="rail-sheet-item is-danger" style={{ '--i': PAGES.length - PHONE_PAGES } as CSSProperties} onClick={signOut}>
-            <span className="rail-sheet-icon"><IconLogout /></span>Sign out
-          </button>
-        )}
-      </div>
     </nav>
   );
 }

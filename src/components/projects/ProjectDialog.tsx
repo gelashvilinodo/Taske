@@ -2,12 +2,15 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { PROJECT_COLORS, PROJECT_NAME_MAX, type Project } from '@/lib/tasks/model';
-import { prepareLogo } from '@/lib/tasks/logo';
+import { readLogoFile, type LogoFrame } from '@/lib/tasks/logo';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { ProjectLogo } from './ProjectBadge';
-import { IconFolderAdd, IconSave, IconTrash, IconUpload } from '@/components/shell/icons';
+import LogoEditor from './LogoEditor';
+import { IconEdit, IconFolderAdd, IconSave, IconTrash, IconUpload } from '@/components/shell/icons';
 
 type Draft = { name: string; color: string; logo: string };
+/** The full-size picture behind the logo and how it was last framed, so re-editing starts from the original. */
+type Source = { src: string; frame?: LogoFrame };
 
 /** Create or edit a project: name, colour and logo. `project` null = new, undefined = closed. */
 export default function ProjectDialog({ project, onClose, onCreated }: { project: Project | null | undefined; onClose: () => void; onCreated?: (id: string) => void }) {
@@ -18,13 +21,16 @@ export default function ProjectDialog({ project, onClose, onCreated }: { project
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [armed, setArmed] = useState(false);
+  const [source, setSource] = useState<Source | null>(null);
+  const [framing, setFraming] = useState(false);
   const isNew = project === null;
   const used = project ? tasks.filter(t => t.project === project.id).length : 0;
 
   useEffect(() => {
     if (project === undefined) { if (dialog.current?.open) dialog.current.close(); return; }
     setDraft(project ? { name: project.name, color: project.color, logo: project.logo } : { name: '', color: PROJECT_COLORS[0], logo: '' });
-    setError(''); setArmed(false);
+    setError(''); setArmed(false); setFraming(false);
+    setSource(project?.logo ? { src: project.logo, frame: { zoom: 1, x: 0, y: 0 } } : null);
     if (!dialog.current?.open) dialog.current?.showModal();
   }, [project]);
 
@@ -33,7 +39,7 @@ export default function ProjectDialog({ project, onClose, onCreated }: { project
   const pickFile = async (file: File | undefined) => {
     if (!file) return;
     setBusy(true); setError('');
-    try { set({ logo: await prepareLogo(file) }); }
+    try { setSource({ src: await readLogoFile(file) }); setFraming(true); }
     catch (e) { setError(e instanceof Error ? e.message : 'Could not use this image.'); }
     finally { setBusy(false); if (fileInput.current) fileInput.current.value = ''; }
   };
@@ -96,11 +102,17 @@ export default function ProjectDialog({ project, onClose, onCreated }: { project
             <button className="ghost" type="button" disabled={busy} onClick={() => fileInput.current?.click()}>
               <IconUpload size={16} />{busy ? 'Preparing…' : draft.logo ? 'Replace logo' : 'Upload logo'}
             </button>
-            {draft.logo && <button className="ghost" type="button" onClick={() => set({ logo: '' })}><IconTrash size={16} />Remove</button>}
-            <span className="logo-hint">PNG, JPG, SVG or WebP, up to 5 MB. Shrunk to {128}px.</span>
+            {draft.logo && source && <button className="ghost" type="button" onClick={() => setFraming(true)}><IconEdit size={16} />Adjust</button>}
+            {draft.logo && <button className="ghost" type="button" onClick={() => { set({ logo: '' }); setSource(null); }}><IconTrash size={16} />Remove</button>}
+            <span className="logo-hint">PNG, JPG, SVG or WebP, up to 5 MB. You can zoom and move it to fit the tile.</span>
             <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" hidden
               onChange={e => pickFile(e.target.files?.[0])} />
           </div>
+          {framing && source && (
+            <LogoEditor key={source.src} src={source.src} initial={source.frame}
+              onCancel={() => setFraming(false)}
+              onApply={(logo, frame) => { set({ logo }); setSource({ src: source.src, frame }); setFraming(false); }} />
+          )}
         </div>
 
         {error && <p className="form-error" role="alert">{error}</p>}
@@ -113,7 +125,7 @@ export default function ProjectDialog({ project, onClose, onCreated }: { project
           ) : <span />}
           <div>
             <button className="ghost" type="button" onClick={() => dialog.current?.close()}>Cancel</button>
-            <button className="primary" type="submit" disabled={busy}>{isNew ? <><IconFolderAdd size={16} />Create project</> : <><IconSave size={16} />Save</>}</button>
+            <button className="primary" type="submit" disabled={busy || framing}>{isNew ? <><IconFolderAdd size={16} />Create project</> : <><IconSave size={16} />Save</>}</button>
           </div>
         </div>
       </form>

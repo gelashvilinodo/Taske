@@ -17,6 +17,8 @@ export default function MenuButton({ className, title, ariaLabel, items, current
 
   useLayoutEffect(() => {
     if (!open || !btn.current || !menu.current) { setPos(null); return; }
+    // In the top layer, so it shows above (and is not clipped by) an open window.
+    try { menu.current.showPopover?.(); } catch { /* already showing */ }
     const r = btn.current.getBoundingClientRect();
     const mw = menu.current.offsetWidth, mh = menu.current.offsetHeight;
     setPos({
@@ -36,7 +38,8 @@ export default function MenuButton({ className, title, ariaLabel, items, current
       close();
     };
     const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { close(); btn.current?.focus(); return; }
+      // preventDefault keeps Escape from also closing the window the menu sits in
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); btn.current?.focus(); return; }
       if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && menu.current) {
         e.preventDefault();
         const list = [...menu.current.children] as HTMLElement[];
@@ -45,12 +48,12 @@ export default function MenuButton({ className, title, ariaLabel, items, current
       }
     };
     document.addEventListener('pointerdown', down, true);
-    document.addEventListener('keydown', key);
+    document.addEventListener('keydown', key, true);
     addEventListener('resize', close);
     addEventListener('scroll', close, true);
     return () => {
       document.removeEventListener('pointerdown', down, true);
-      document.removeEventListener('keydown', key);
+      document.removeEventListener('keydown', key, true);
       removeEventListener('resize', close);
       removeEventListener('scroll', close, true);
     };
@@ -62,7 +65,7 @@ export default function MenuButton({ className, title, ariaLabel, items, current
         {children}
       </button>
       {open && createPortal(
-        <div id="menu" role="menu" ref={menu} style={pos ? { left: pos.left, top: pos.top } : { visibility: 'hidden', left: 0, top: 0 }}>
+        <div id="menu" role="menu" popover="manual" ref={menu} style={pos ? { left: pos.left, top: pos.top } : { visibility: 'hidden', left: 0, top: 0 }}>
           {items.map(it => (
             <button key={it.id} type="button" role="menuitemradio" aria-checked={it.id === current}
               onClick={() => { setOpen(false); if (it.id !== current) onPick(it.id); }}>
@@ -70,7 +73,8 @@ export default function MenuButton({ className, title, ariaLabel, items, current
             </button>
           ))}
         </div>,
-        document.body,
+        // Inside an open modal window everything outside it is inert, so the menu lives in that window.
+        btn.current?.closest('dialog') ?? document.body,
       )}
     </>
   );

@@ -1,9 +1,25 @@
-/** Turns an uploaded image into a small centre-cropped square data URL so it can live in the projects table. */
+/** Uploaded logos: read the file, then let the user frame it (zoom + pan) and bake a small square data URL for the projects table. */
 export const LOGO_SIZE = 128;
 export const LOGO_MAX_UPLOAD = 5 * 1024 * 1024;
 const LOGO_MAX_STORED = 200_000; // characters of data URL; matches the database check
 
-export async function prepareLogo(file: File): Promise<string> {
+/** How the image sits in the square frame. `zoom` 1 = the whole image just fits; x/y move its centre, as a fraction of the frame side. */
+export type LogoFrame = { zoom: number; x: number; y: number };
+
+export const ZOOM_MIN = 0.2;
+export const ZOOM_MAX = 10;
+
+export function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error('Could not open the image.'));
+    i.src = src;
+  });
+}
+
+/** Checks the file and returns it as a data URL, ready for the editor. */
+export async function readLogoFile(file: File): Promise<string> {
   if (!file.type.startsWith('image/')) throw new Error('Choose an image file (PNG, JPG, SVG or WebP).');
   if (file.size > LOGO_MAX_UPLOAD) throw new Error('The image is larger than 5 MB. Choose a smaller one.');
   const src = await new Promise<string>((resolve, reject) => {
@@ -12,24 +28,36 @@ export async function prepareLogo(file: File): Promise<string> {
     r.onerror = () => reject(new Error('Could not read the image.'));
     r.readAsDataURL(file);
   });
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new Image();
-    i.onload = () => resolve(i);
-    i.onerror = () => reject(new Error('Could not open the image.'));
-    i.src = src;
-  });
-  // Centre-crop to a square so the photo fills the whole logo tile.
-  const w = img.naturalWidth || LOGO_SIZE, h = img.naturalHeight || LOGO_SIZE;
-  const side = Math.min(w, h);
-  const outSide = Math.max(1, Math.min(LOGO_SIZE, Math.round(side)));
+  await loadImage(src); // fail early if the browser cannot decode it
+  return src;
+}
+
+/** Natural size, with a fallback for SVGs that declare none. */
+export function imageSize(img: HTMLImageElement) {
+  return { w: img.naturalWidth || 512, h: img.naturalHeight || 512 };
+}
+
+/** Zoom at which the image covers the whole square (no empty edges). */
+export function coverZoom(img: HTMLImageElement) {
+  const { w, h } = imageSize(img);
+  return Math.max(w, h) / Math.min(w, h);
+}
+
+/** Paints the framed image onto a square canvas and returns it as a data URL. Empty edges stay transparent. */
+export function renderLogo(img: HTMLImageElement, f: LogoFrame): string {
+  const { w, h } = imageSize(img);
+  const out = LOGO_SIZE;
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = outSide;
+  canvas.width = canvas.height = out;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not process the image.');
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, (w - side) / 2, (h - side) / 2, side, side, 0, 0, outSide, outSide);
-  let out = canvas.toDataURL('image/webp', 0.9);
-  if (!out.startsWith('data:image/webp')) out = canvas.toDataURL('image/png');
-  if (out.length > LOGO_MAX_STORED) throw new Error('This image is too detailed to store. Try a simpler logo.');
-  return out;
+  const scale = (out / Math.max(w, h)) * f.zoom;
+  ctx.translate(out / 2 + f.x * out, out / 2 + f.y * out);
+  ctx.scale(scale, scale);
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  let data = canvas.toDataURL('image/webp', 0.9);
+  if (!data.startsWith('data:image/webp')) data = canvas.toDataURL('image/png');
+  if (data.length > LOGO_MAX_STORED) throw new Error('This image is too detailed to store. Try a simpler logo.');
+  return data;
 }

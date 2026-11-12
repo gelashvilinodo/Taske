@@ -43,6 +43,7 @@ export default function AddTaskForm() {
   const [desc, setDesc] = useState('');
   const [subs, setSubs] = useState('');
   const titleRef = useRef<HTMLTextAreaElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const last = readPref('ps.project');
@@ -58,7 +59,8 @@ export default function AddTaskForm() {
       const d = (e as CustomEvent<string>).detail;
       setDay(d && dayIsos.includes(d) ? d : defaultDay);
       if (!dialog.current?.open) dialog.current?.showModal();
-      requestAnimationFrame(() => titleRef.current?.focus());
+      // Straight to the title, so focus never lands on the close button first.
+      titleRef.current?.focus({ preventScroll: true });
     };
     window.addEventListener(ADD_ON_DAY, onAdd);
     return () => window.removeEventListener(ADD_ON_DAY, onAdd);
@@ -72,6 +74,11 @@ export default function AddTaskForm() {
   }, [title]);
 
   const close = () => dialog.current?.close();
+  const toggleDetails = () => {
+    const next = !details;
+    setDetails(next);
+    if (next) requestAnimationFrame(() => descRef.current?.focus({ preventScroll: true }));
+  };
 
   const submit = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -117,31 +124,36 @@ export default function AddTaskForm() {
 
         <ProjectSelect value={project} onChange={id => { setProject(id); writePref('ps.project', id); }} />
 
-        <div className="add-meta">
-          <div className="field"><span id={uid + 'p'}><IconFlag size={14} />Priority</span>
-            <Dropdown value={priority} options={PRIORITY_OPTIONS} onChange={v => setPriority(v as PriorityId)} labelledBy={uid + 'p'} />
+        <div className="add-body">
+          <div className="add-meta">
+            <div className="field"><span id={uid + 'p'}><IconFlag size={14} />Priority</span>
+              <Dropdown value={priority} options={PRIORITY_OPTIONS} onChange={v => setPriority(v as PriorityId)} labelledBy={uid + 'p'} />
+            </div>
+            <div className="field"><span id={uid + 'd'}><IconCalendar size={14} />Day</span>
+              <Dropdown value={day} options={dayOptions} onChange={setDay} labelledBy={uid + 'd'} />
+            </div>
+            <div className="field"><span id={uid + 'dl'}><IconClock size={14} />Deadline</span>
+              <DatePicker value={deadline} onChange={setDeadline} labelledBy={uid + 'dl'} placeholder="No deadline" />
+            </div>
           </div>
-          <div className="field"><span id={uid + 'd'}><IconCalendar size={14} />Day</span>
-            <Dropdown value={day} options={dayOptions} onChange={setDay} labelledBy={uid + 'd'} />
-          </div>
-          <div className="field"><span id={uid + 'dl'}><IconClock size={14} />Deadline</span>
-            <DatePicker value={deadline} onChange={setDeadline} labelledBy={uid + 'dl'} placeholder="No deadline" />
+
+          {/* Always rendered so it can grow open: the window gets taller smoothly and stays centred */}
+          <div className={'add-details' + (details ? ' is-open' : '')} inert={!details}>
+            <div className="add-details-inner">
+              <div className="details-row">
+                <label className="field"><span><IconDescription size={14} />Description</span>
+                  <textarea ref={descRef} id="addDesc" className="input" rows={3} placeholder="Details, links, who to check with" value={desc} onChange={e => setDesc(e.target.value)} />
+                </label>
+                <label className="field"><span><IconSubtasks size={14} />Subtasks, one per line</span>
+                  <textarea id="addSubs" className="input" rows={3} placeholder="Prepare invoice" value={subs} onChange={e => setSubs(e.target.value)} />
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
-        {details && (
-          <div className="details-row">
-            <label className="field"><span><IconDescription size={14} />Description</span>
-              <textarea id="addDesc" className="input" rows={3} placeholder="Details, links, who to check with" value={desc} onChange={e => setDesc(e.target.value)} autoFocus />
-            </label>
-            <label className="field"><span><IconSubtasks size={14} />Subtasks, one per line</span>
-              <textarea id="addSubs" className="input" rows={3} placeholder="Prepare invoice" value={subs} onChange={e => setSubs(e.target.value)} />
-            </label>
-          </div>
-        )}
-
         <div className="dlg-foot add-foot">
-          <button className="more" type="button" aria-expanded={details} onClick={() => setDetails(d => !d)}>
+          <button className="more" type="button" aria-expanded={details} onClick={toggleDetails}>
             {details ? <><IconMinus size={14} />Hide details</> : <><IconPlus size={14} />Description and subtasks</>}
           </button>
           <div>

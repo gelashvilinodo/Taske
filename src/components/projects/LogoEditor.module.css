@@ -1,0 +1,56 @@
+.editor { display: grid; gap: var(--space-2); }
+
+.stage { display: flex; align-items: flex-start; gap: var(--space-4); flex-wrap: wrap; }
+
+/* The image sits centred in a square; --x/--y move it (fractions of the side), --z scales it. */
+.frame, .preview {
+  position: relative;
+  overflow: hidden;
+  flex: none;
+  background:
+    repeating-conic-gradient(var(--color-line) 0 25%, transparent 0 50%) 0 0 / 16px 16px,
+    var(--color-card-hover);
+  box-shadow: inset 0 0 0 1px var(--panel-border);
+}
+.frame img, .preview img {
+  position: absolute;
+  left: calc(50% + var(--x) * 100%);
+  top: calc(50% + var(--y) * 100%);
+  width: calc(var(--fw) * 100%);
+  height: calc(var(--fh) * 100%);
+  max-width: none;
+  transform: translate(-50%, -50%) scale(var(--z));
+  pointer-events: none;
+  user-select: none;
+}
+
+.frame {
+  width: 220px; height: 220px;
+  border-radius: calc(220px * .28);
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+}
+.frame:active { cursor: grabbing; }
+.frame:focus-visible { box-shadow: inset 0 0 0 1px var(--panel-border), 0 0 0 2px var(--color-accent); }
+
+.previews { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+.previewsLabel { font-size: var(--text-2xs); color: var(--color-muted); }
+.preview { width: var(--px); height: var(--px); border-radius: calc(var(--px) * .28); }
+
+.zoomRow { display: flex; align-items: center; gap: var(--space-2); max-width: 340px; }
+.slider { flex: 1; min-width: 0; accent-color: var(--color-accent); }
+.iconBtn {
+  display: inline-grid; place-items: center;
+  width: 30px; height: 30px; padding: 0;
+  border: var(--border-width) solid var(--color-line);
+  border-radius: 50%;
+  background: transparent; color: inherit; cursor: pointer;
+}
+.iconBtn:hover { background: var(--color-card-hover); }
+.pct { min-width: 4ch; text-align: right; font-size: var(--text-xs); color: var(--color-muted); font-variant-numeric: tabular-nums; }
+
+.actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.actions :global(.ghost), .actions :global(.primary) { min-height: var(--control-md); padding-inline: var(--space-3); }
+.spacer { flex: 1; }
+.hint { margin: 0; font-size: var(--text-2xs); color: var(--color-muted); }
