@@ -12,7 +12,8 @@ export const hasOpenSubs = (subs: Subtask[]) => subs.some(s => !subClosed(s));
 /**
  * Shown when someone moves a task to Done while some of its subtasks are still open.
  * The task only moves once every subtask is done or canceled: one by one here, or all at once.
- * `onConfirm` gets the subtasks with every open one marked done.
+ * "Mark all done" only ticks them; "Move to Done" (enabled once nothing is open) moves the task.
+ * `onConfirm` gets the subtasks as ticked in the dialog.
  */
 export default function SubtaskGate({ subtasks, onConfirm, onCancel }: {
   subtasks: Subtask[];
@@ -26,9 +27,12 @@ export default function SubtaskGate({ subtasks, onConfirm, onCancel }: {
 
   useEffect(() => { dialog.current?.showModal(); }, []);
 
+  /** Ticks every open subtask; the task itself stays put until "Move to Done" is pressed. */
+  const markAll = () => setSubs(list => list.map(s => (subClosed(s) ? s : { ...s, status: 'done' as const })));
+
   const finish = () => {
     confirmed.current = true;
-    onConfirm(subs.map(s => (subClosed(s) ? s : { ...s, status: 'done' as const })));
+    onConfirm(subs);
   };
 
   return createPortal(
@@ -56,7 +60,7 @@ export default function SubtaskGate({ subtasks, onConfirm, onCancel }: {
         <div className="dlg-foot">
           <button className="ghost" type="button" onClick={() => dialog.current?.close()}>Cancel</button>
           <div>
-            {open > 0 && <button className="ghost" type="button" onClick={finish}>Mark all done</button>}
+            {open > 0 && <button className="ghost" type="button" onClick={markAll}>Mark all done</button>}
             <button className="primary" type="button" disabled={open > 0} onClick={finish}>
               <IconDone size={16} />Move to Done
             </button>
