@@ -30,14 +30,17 @@ export default function WeekBoard() {
     if (el && col) el.scrollTo({ left: leftOf(el, col), behavior: smooth ? 'smooth' : 'auto' });
   }, []);
 
-  // When the week scrolls sideways (smaller screens), open on today, or on Monday for other weeks.
+  // When the week scrolls sideways (below very wide screens), open on today, or on Monday for other weeks.
   const weekKey = iso(weekStart);
   useEffect(() => {
     const el = board.current;
     if (!el || el.scrollWidth <= el.clientWidth + 1) { setShown(0); return; }
     const landing = edgeLanding.current;
     edgeLanding.current = null;
-    const i = landing === 'start' ? 0 : landing === 'end' ? days.length - 1 : Math.max(0, days.findIndex(d => iso(d) === td));
+    let i = landing === 'start' ? 0 : landing === 'end' ? days.length - 1 : Math.max(0, days.findIndex(d => iso(d) === td));
+    // Several days fit at once (laptops): stay on Monday while today is already in view, so the weekdays lead.
+    const col = el.children[i] as HTMLElement | undefined;
+    if (!landing && col && leftOf(el, col) + col.offsetWidth <= el.clientWidth) i = 0;
     goTo(i, false);
     setShown(i);
   }, [weekKey]);
