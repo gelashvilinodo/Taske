@@ -89,24 +89,28 @@
      Text on a project tint is mixed toward the ink so it stays readable in both themes. */
   --pj-ink-mix: 38%;
 
-  /* Page backdrop: soft purple light behind the glass */
+  /* Page backdrop: a few saturated colour blobs behind the glass. Blur only shows
+     where there is colour and contrast to blur, so the blobs are smaller and stronger
+     than a plain wash, and some sit under the rail and the window edges. */
   --backdrop:
-    radial-gradient(60vmax 50vmax at 8% -10%, light-dark(rgb(163 116 255 / .30), rgb(111 36 234 / .38)), transparent 70%),
-    radial-gradient(55vmax 45vmax at 105% 20%, light-dark(rgb(220 203 255 / .55), rgb(64 14 150 / .45)), transparent 70%),
-    radial-gradient(50vmax 40vmax at 40% 115%, light-dark(rgb(255 255 255 / .9), rgb(88 20 199 / .22)), transparent 70%),
+    radial-gradient(28vmax 28vmax at 6% 12%, rgb(138 77 250 / .55), transparent 70%),
+    radial-gradient(24vmax 22vmax at 92% 8%, light-dark(rgb(255 122 196 / .45), rgb(214 51 160 / .40)), transparent 70%),
+    radial-gradient(30vmax 26vmax at 88% 78%, light-dark(rgb(92 156 255 / .42), rgb(37 99 235 / .38)), transparent 70%),
+    radial-gradient(26vmax 24vmax at 22% 96%, light-dark(rgb(163 116 255 / .50), rgb(88 20 199 / .50)), transparent 70%),
+    radial-gradient(18vmax 16vmax at 52% 42%, light-dark(rgb(255 196 140 / .30), rgb(111 36 234 / .25)), transparent 70%),
     light-dark(var(--pearl-100), var(--jet-900));
 
   /* ---------- Glass ---------- */
-  --glass-blur: 18px;
-  --glass-saturate: 160%;
+  --glass-blur: 28px;
+  --glass-saturate: 190%;
   --glass-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  --glass-bg: light-dark(rgb(255 255 255 / .52), rgb(26 24 38 / .50));
+  --glass-bg: light-dark(rgb(255 255 255 / .40), rgb(26 24 38 / .42));
   --glass-bg-soft: light-dark(rgb(255 255 255 / .34), rgb(255 255 255 / .035));
   --glass-bg-strong: light-dark(rgb(252 251 248 / .86), rgb(22 21 32 / .86));
-  --glass-border: light-dark(rgb(255 255 255 / .75), rgb(255 255 255 / .09));
-  --glass-highlight: inset 0 1px 0 light-dark(rgb(255 255 255 / .9), rgb(255 255 255 / .07));
+  --glass-border: light-dark(rgb(255 255 255 / .85), rgb(255 255 255 / .14));
+  --glass-highlight: inset 0 1px 0 light-dark(rgb(255 255 255 / .95), rgb(255 255 255 / .12));
   /* The big app window and the light panels inside it (panels do not blur) */
-  --window-bg: light-dark(rgb(255 255 255 / .42), rgb(24 22 34 / .55));
+  --window-bg: light-dark(rgb(255 255 255 / .30), rgb(24 22 34 / .45));
   --panel-bg: light-dark(rgb(255 255 255 / .55), rgb(255 255 255 / .045));
   --panel-bg-hover: light-dark(rgb(255 255 255 / .8), rgb(255 255 255 / .09));
   --panel-border: light-dark(rgb(255 255 255 / .85), rgb(255 255 255 / .08));
