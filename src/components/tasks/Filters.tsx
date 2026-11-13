@@ -6,6 +6,9 @@ import { inWeek, type Task } from '@/lib/tasks/model';
 import { ProjectLogo } from '@/components/projects/ProjectBadge';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 
+/** Filter id for tasks that have no project. */
+const OTHER = '__other';
+
 type Thumb = { x: number; y: number; w: number; h: number; n: number };
 
 /**
@@ -18,10 +21,19 @@ export default function Filters({ scope }: { scope: 'week' | 'month' | 'all' }) 
   const inScope: Task[] = scope === 'week'
     ? tasks.filter(t => inWeek(t, weekStart))
     : scope === 'month' ? tasks.filter(t => t.day.startsWith(iso(month).slice(0, 7))) : tasks;
+  const known = new Set(projects.map(p => p.id));
+  const loose = (t: Task) => !t.project || !known.has(t.project);
+  // "Other" only shows while some task has no project; it drops back to All once none are left.
+  const hasLoose = tasks.some(loose);
   const items = [
     { id: 'all', name: 'All', n: inScope.length, project: undefined as (typeof projects)[number] | undefined },
     ...projects.map(p => ({ id: p.id, name: p.name, n: inScope.filter(t => t.project === p.id).length, project: p })),
+    ...(hasLoose ? [{ id: OTHER, name: 'Other', n: inScope.filter(loose).length, project: undefined }] : []),
   ];
+
+  useEffect(() => {
+    if (filter === OTHER && !hasLoose) setFilter('all');
+  }, [filter, hasLoose, setFilter]);
 
   const row = useRef<HTMLDivElement>(null);
   const [thumb, setThumb] = useState<Thumb | null>(null);
@@ -104,6 +116,11 @@ export default function Filters({ scope }: { scope: 'week' | 'month' | 'all' }) 
 }
 
 export function useVisibleTasks() {
-  const { tasks, filter } = useWorkspace();
-  return filter === 'all' ? tasks : tasks.filter(t => t.project === filter);
+  const { tasks, projects, filter } = useWorkspace();
+  if (filter === 'all') return tasks;
+  if (filter === OTHER) {
+    const known = new Set(projects.map(p => p.id));
+    return tasks.filter(t => !t.project || !known.has(t.project));
+  }
+  return tasks.filter(t => t.project === filter);
 }

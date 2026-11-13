@@ -51,7 +51,8 @@ export default function TaskEditor() {
   };
 
   const finalSubs = (d: Draft) => d.subtasks.concat(makeSubs(d.newSub))
-    .map(s => ({ id: s.id, title: s.title.trim().slice(0, 300), status: s.status, priority: s.priority }))
+    // Nested subtasks ride along unchanged; they are edited in the task's window.
+    .map(s => ({ id: s.id, title: s.title.trim().slice(0, 300), status: s.status, priority: s.priority, subtasks: s.subtasks ?? [] }))
     .filter(s => s.title);
 
   const submit = (e: FormEvent) => {

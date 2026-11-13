@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get('code');
   const next = searchParams.get('next');
-  const target = next && next.startsWith('/') && !next.startsWith('//') ? next : '/board';
+  const target = next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
 
   const providerError = searchParams.get('error_description') || searchParams.get('error');
   if (providerError) return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(providerError)}`);

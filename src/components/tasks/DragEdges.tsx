@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from 'react';
 import { usePathname } from 'next/navigation';
-import { useTaskDrag } from './TaskDrag';
+import { useDragSelect } from './TaskDrag';
 
 const FIRST_MS = 550, REPEAT_MS = 950; // keep in step with TaskDrag's edge timing
 
@@ -11,9 +11,12 @@ const FIRST_MS = 550, REPEAT_MS = 950; // keep in step with TaskDrag's edge timi
  * there does: the days slide by one, carrying on into the previous/next week.
  */
 export default function DragEdges() {
-  const { drag } = useTaskDrag();
+  // Only the edge state; moving the drop line doesn't re-render the hints.
+  const key = useDragSelect(d => (!d || d.landing ? '' : d.edge + '|' + d.edgeSteps));
   const path = usePathname();
-  if (!drag || drag.landing || path !== '/board') return null;
+  if (!key || path !== '/board') return null;
+  const [edge, edgeSteps] = key.split('|').map(Number);
+  const drag = { edge, edgeSteps };
   const zone = (dir: -1 | 1) => {
     const on = drag.edge === dir;
     return (

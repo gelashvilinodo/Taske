@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from 'react';
  * Open/close state and placement for our own dropdowns (Dropdown, DatePicker).
  * The popover opens below its button, or above when there is more room there,
  * and lines up with the button's right edge when it would run off the right side.
- * "Room" is the viewport, or the dialog the field sits in when that dialog scrolls (and so clips what overflows it).
+ * "Room" is the viewport, or the scrolling box the field sits in (a dialog, or a [data-pop-room] area inside one),
+ * since a scrolling box clips what overflows it.
  */
 export function usePopover(size: { height: number; width: number }) {
   const [open, setOpen] = useState(false);
@@ -21,7 +22,8 @@ export function usePopover(size: { height: number; width: number }) {
     if (r) {
       const dlg = button.current?.closest('dialog');
       // A scrolling dialog clips its popovers; one with overflow: visible lets them spill past its edge.
-      const box = dlg && getComputedStyle(dlg).overflowY !== 'visible' ? dlg.getBoundingClientRect() : undefined;
+      const room = button.current?.closest<HTMLElement>('[data-pop-room]') ?? (dlg && getComputedStyle(dlg).overflowY !== 'visible' ? dlg : null);
+      const box = room?.getBoundingClientRect();
       const top = Math.max(0, box?.top ?? 0), bottom = Math.min(innerHeight, box?.bottom ?? innerHeight);
       // Sideways, keep inside the dialog either way so the popover lines up with its fields.
       const right = Math.min(innerWidth, dlg?.getBoundingClientRect().right ?? innerWidth) - 8;

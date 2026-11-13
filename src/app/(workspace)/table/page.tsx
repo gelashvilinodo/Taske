@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Filters from '@/components/tasks/Filters';
 import TaskTable from '@/components/views/TaskTable';
 
@@ -7,7 +8,8 @@ export default function TablePage() {
   return (
     <>
       <div className="toolbar"><Filters scope="all" /></div>
-      <TaskTable />
+      {/* The table reads its dashboard filter from the URL */}
+      <Suspense><TaskTable /></Suspense>
     </>
   );
 }

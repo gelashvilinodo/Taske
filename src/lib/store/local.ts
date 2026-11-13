@@ -1,4 +1,4 @@
-import type { Comment } from '@/lib/tasks/model';
+import type { Comment, HistoryEvent } from '@/lib/tasks/model';
 import type { RawProject, RawTask, TaskStore } from './types';
 
 // Same keys and record shape as the original single-page app, so existing browser data still loads.
@@ -26,7 +26,7 @@ export function createLocalStore(): TaskStore {
       const all = read('comments');
       return Object.keys(all).map(id => {
         const v = all[id];
-        return { id, taskId: String(v.taskId ?? ''), text: String(v.text ?? ''), at: Number(v.at) || 0, by: String(v.by ?? '') };
+        return { id, taskId: String(v.taskId ?? ''), subId: String(v.subId ?? ''), text: String(v.text ?? ''), at: Number(v.at) || 0, by: String(v.by ?? '') };
       }).filter(c => c.taskId && c.text);
     },
     async loadProjects() {
@@ -48,7 +48,7 @@ export function createLocalStore(): TaskStore {
       write('tasks', all => { delete all[id]; }),
       write('comments', all => { for (const k in all) if (all[k].taskId === id) delete all[k]; }),
     ]).then(() => undefined),
-    insertComment: (c: Comment) => write('comments', all => { all[c.id] = { taskId: c.taskId, text: c.text, at: c.at, by: c.by }; }),
+    insertComment: (c: Comment) => write('comments', all => { all[c.id] = { taskId: c.taskId, subId: c.subId, text: c.text, at: c.at, by: c.by }; }),
     deleteComment: id => write('comments', all => { delete all[id]; }),
     insertProject: (id, fields) => write('projects', all => { all[id] = { ...fields }; }),
     updateProject: (id, patch) => write('projects', all => { all[id] = { ...all[id], ...patch }; }),
@@ -56,5 +56,16 @@ export function createLocalStore(): TaskStore {
       write('projects', all => { delete all[id]; }),
       write('tasks', all => { for (const k in all) if (all[k].project === id) all[k] = { ...all[k], project: '' }; }),
     ]).then(() => undefined),
+    async loadHistory(taskId) {
+      const all = read('history');
+      return Object.keys(all).map(id => ({ ...all[id], id }) as unknown as HistoryEvent)
+        .filter(e => e.taskId && Array.isArray(e.changes) && (!taskId || e.taskId === taskId)).sort((a, b) => b.at - a.at);
+    },
+    insertHistory: (e: HistoryEvent) => write('history', all => { const { id, ...rest } = e; all[id] = rest; }),
+    watchHistory(onChange) {
+      const fn = (e: StorageEvent) => { if (e.key === KEY + 'history') onChange(); };
+      window.addEventListener('storage', fn);
+      return () => window.removeEventListener('storage', fn);
+    },
   };
 }

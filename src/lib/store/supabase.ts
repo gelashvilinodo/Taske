@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Comment, TaskFields, TaskPatch } from '@/lib/tasks/model';
+import type { Comment, HistoryEvent, TaskFields, TaskPatch } from '@/lib/tasks/model';
 import type { RawProject, RawTask, StoreError, TaskStore } from './types';
 
 // App field name → database column.
@@ -28,6 +28,9 @@ function fromRow(r: Record<string, unknown>): RawTask {
   return out;
 }
 
+/** Newest history entries loaded at once. */
+const HISTORY_LIMIT = 5000;
+
 function check({ error }: { error: { message: string; code?: string } | null }) {
   if (!error) return;
   const offline = (typeof navigator !== 'undefined' && !navigator.onLine) || /fetch|network/i.test(error.message);
@@ -53,7 +56,7 @@ export function createSupabaseStore(sb: SupabaseClient): TaskStore {
     async loadComments() {
       const res = await sb.from('comments').select('*');
       check(res);
-      return (res.data ?? []).map(r => ({ id: r.id, taskId: r.task_id, text: r.text, at: Number(r.at) || 0, by: r.user_id }));
+      return (res.data ?? []).map(r => ({ id: r.id, taskId: r.task_id, subId: typeof r.sub_id === 'string' ? r.sub_id : '', text: r.text, at: Number(r.at) || 0, by: r.user_id }));
     },
     async loadProjects() {
       const res = await sb.from('projects').select('*');
@@ -75,7 +78,8 @@ export function createSupabaseStore(sb: SupabaseClient): TaskStore {
     insertTask: async (id, fields) => check(await sb.from('tasks').insert({ id, ...toRow(fields) })),
     updateTask: async (id, patch) => check(await sb.from('tasks').update(toRow(patch)).eq('id', id)),
     deleteTask: async id => check(await sb.from('tasks').delete().eq('id', id)),
-    insertComment: async (c: Comment) => check(await sb.from('comments').insert({ id: c.id, task_id: c.taskId, text: c.text, at: c.at })),
+    // sub_id is only sent for subtask comments, so task comments still save before the column exists.
+    insertComment: async (c: Comment) => check(await sb.from('comments').insert({ id: c.id, task_id: c.taskId, text: c.text, at: c.at, ...(c.subId ? { sub_id: c.subId } : {}) })),
     deleteComment: async id => check(await sb.from('comments').delete().eq('id', id)),
     insertProject: async (id, f) => check(await sb.from('projects').insert({ id, name: f.name, color: f.color, logo: f.logo || null, created_at: f.createdAt })),
     updateProject: async (id, p) => {
@@ -88,6 +92,25 @@ export function createSupabaseStore(sb: SupabaseClient): TaskStore {
     deleteProject: async id => {
       check(await sb.from('tasks').update({ project: '' }).eq('project', id));
       check(await sb.from('projects').delete().eq('id', id));
+    },
+    async loadHistory(taskId) {
+      let q = sb.from('task_history').select('id, task_id, task_title, kind, changes, at, user_id, by_name');
+      if (taskId) q = q.eq('task_id', taskId);
+      const res = await q.order('at', { ascending: false }).limit(HISTORY_LIMIT);
+      check(res);
+      return (res.data ?? []).map(r => ({
+        id: String(r.id), taskId: String(r.task_id), taskTitle: r.task_title ?? '', kind: r.kind,
+        changes: Array.isArray(r.changes) ? r.changes : [], at: Number(r.at) || 0, by: r.user_id ?? '', byName: r.by_name ?? '',
+      }) as HistoryEvent);
+    },
+    insertHistory: async (e: HistoryEvent) => check(await sb.from('task_history').insert({
+      id: e.id, task_id: e.taskId, task_title: e.taskTitle, kind: e.kind, changes: e.changes, at: e.at, by_name: e.byName,
+    })),
+    watchHistory(onChange) {
+      const channel = sb.channel('history-' + Math.random().toString(36).slice(2))
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'task_history' }, () => onChange())
+        .subscribe();
+      return () => { sb.removeChannel(channel); };
     },
   };
 }

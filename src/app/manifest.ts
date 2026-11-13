@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Taske',
     short_name: 'Taske',
     description: 'A calm week planner for tasks across projects.',
-    start_url: '/board',
+    start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',

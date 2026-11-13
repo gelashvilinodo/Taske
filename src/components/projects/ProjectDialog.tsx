@@ -6,6 +6,7 @@ import { readLogoFile, type LogoFrame } from '@/lib/tasks/logo';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { ProjectLogo } from './ProjectBadge';
 import LogoEditor from './LogoEditor';
+import AssigneeButton from '@/components/ui/AssigneeButton';
 import { IconEdit, IconFolderAdd, IconSave, IconTrash, IconUpload } from '@/components/shell/icons';
 
 type Draft = { name: string; color: string; logo: string };
@@ -113,6 +114,11 @@ export default function ProjectDialog({ project, onClose, onCreated }: { project
               onCancel={() => setFraming(false)}
               onApply={(logo, frame) => { set({ logo }); setSource({ src: source.src, frame }); setFraming(false); }} />
           )}
+        </div>
+
+        <div className="field">
+          <span className="fieldset-label">People</span>
+          <div className="logo-row"><AssigneeButton /></div>
         </div>
 
         {error && <p className="form-error" role="alert">{error}</p>}

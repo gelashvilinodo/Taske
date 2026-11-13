@@ -8,10 +8,11 @@ import styles from './login.module.css';
 
 export const metadata: Metadata = { title: 'Sign in · Personal Schedule' };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  // Local mode has no accounts; signed-in visitors go straight to the board.
-  if (!supabaseEnabled || (await isSignedIn())) redirect('/board');
-  const [{ error }, providers] = await Promise.all([searchParams, enabledProviders()]);
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; add?: string }> }) {
+  const [{ error, add }, providers] = await Promise.all([searchParams, enabledProviders()]);
+  // Local mode has no accounts; signed-in visitors go straight to the dashboard,
+  // unless they came from "Add another account" (they stay signed in while adding one).
+  if (!supabaseEnabled || (!add && (await isSignedIn()))) redirect('/');
   return (
     <main className={styles.page}>
       <section className={styles.card} aria-labelledby="loginTitle">

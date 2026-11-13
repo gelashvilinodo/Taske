@@ -19,21 +19,22 @@ function ago(ms: number) {
 
 /** The notifications themselves, newest first. Clicking one opens its task. */
 export default function NotificationList() {
-  const { available, loaded, ready, items, unread, markRead, markAllRead, remove } = useNotifications();
+  const { available, loaded, ready, items, unread, showList, markRead, markAllRead, remove } = useNotifications();
   const { tasks, loaded: tasksLoaded, openPreview } = useWorkspace();
   const params = useSearchParams();
   const router = useRouter();
   const opened = useRef<string | null>(null);
 
   // Arrived from a tapped push (/notifications?task=…): open that task once the tasks are in.
+  useEffect(() => { showList(); }, [showList]);
   const fromPush = params.get('task');
   useEffect(() => {
-    if (!fromPush || !tasksLoaded || opened.current === fromPush) return;
+    if (!fromPush || !tasksLoaded || !loaded || opened.current === fromPush) return;
     opened.current = fromPush;
     if (tasks.some(t => t.id === fromPush)) openPreview(fromPush);
     items.filter(n => n.taskId === fromPush && !n.read).forEach(n => markRead(n.id));
     router.replace('/notifications', { scroll: false });
-  }, [fromPush, tasksLoaded, tasks, items, openPreview, markRead, router]);
+  }, [fromPush, tasksLoaded, loaded, tasks, items, openPreview, markRead, router]);
 
   if (!available) return <div className="notice">Sign in to get notifications about overdue tasks on your devices.</div>;
   if (!ready) return <div className="notice warn">Notifications are not set up in the database yet.</div>;

@@ -4,8 +4,7 @@ import NotificationsProvider from '@/components/notifications/NotificationsProvi
 import AppHeader from '@/components/shell/AppHeader';
 import Sidebar from '@/components/shell/Sidebar';
 import Toast from '@/components/shell/Toast';
-import TaskEditor from '@/components/tasks/TaskEditor';
-import TaskPreview from '@/components/tasks/TaskPreview';
+import TaskWindows from '@/components/tasks/TaskWindows';
 import AddTaskHost from '@/components/tasks/AddTaskHost';
 import DragEdges from '@/components/tasks/DragEdges';
 import TaskDragProvider from '@/components/tasks/TaskDrag';
@@ -31,8 +30,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
           </div>
         </div>
       </div>
-      <TaskPreview />
-      <TaskEditor />
+      <TaskWindows />
       <AddTaskHost />
       <DragEdges />
       <Toast />

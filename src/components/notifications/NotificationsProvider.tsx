@@ -27,8 +27,11 @@ interface Notifications {
   loaded: boolean;
   /** False when the notifications table does not exist yet (migration not run) */
   ready: boolean;
+  /** Loaded only once the list is asked for (`showList`); until then just the unread count is fetched. */
   items: AppNotification[];
   unread: number;
+  /** Starts loading the full list (the Notifications page). */
+  showList: () => void;
   markRead: (id: string) => void;
   markAllRead: () => void;
   remove: (id: string) => void;
@@ -65,13 +68,25 @@ export default function NotificationsProvider({ children }: { children: ReactNod
   const [items, setItems] = useState<AppNotification[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [ready, setReady] = useState(true);
+  /** Unread count, used until the full list is loaded */
+  const [count, setCount] = useState(0);
+  const [listOn, setListOn] = useState(false);
+  const listWanted = useRef(false);
   const listeners = useRef(new Set<(m: PushMessage) => void>());
   /** Ids already announced with sound, so a push and the live update for the same row chime once. */
   const announced = useRef(new Set<string>());
 
   const load = useCallback(async () => {
     if (!available) return;
-    const res = await getBrowserSupabase().from('notifications').select('*').order('created_at', { ascending: false }).limit(100);
+    const sb = getBrowserSupabase();
+    if (!listWanted.current) {
+      // Nothing on screen needs the list yet: just count the unread ones (no rows are sent).
+      const res = await sb.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null);
+      if (res.error && (res.error.code === 'PGRST205' || res.error.code === '42P01')) setReady(false);
+      else if (!res.error) { setReady(true); setCount(res.count ?? 0); }
+      return;
+    }
+    const res = await sb.from('notifications').select('id, kind, task_id, title, body, created_at, read_at').order('created_at', { ascending: false }).limit(100);
     if (res.error) {
       if (res.error.code === 'PGRST205' || res.error.code === '42P01') setReady(false);
       setLoaded(true);
@@ -83,7 +98,14 @@ export default function NotificationsProvider({ children }: { children: ReactNod
     list.forEach(n => announced.current.add(n.id));
     setItems(list);
     setLoaded(true);
+    setListOn(true);
   }, [available]);
+
+  const showList = useCallback(() => {
+    if (listWanted.current) return;
+    listWanted.current = true;
+    load();
+  }, [load]);
 
   const announce = useCallback((id: string, title: string) => {
     if (announced.current.has(id)) return;
@@ -97,7 +119,10 @@ export default function NotificationsProvider({ children }: { children: ReactNod
   useEffect(() => {
     if (!available) return;
     unlockSound();
-    registerWorker().then(() => refreshSubscription());
+    // Not needed for the first paint: wait until the page has settled.
+    const start = () => { registerWorker().then(() => refreshSubscription()); };
+    if ('requestIdleCallback' in window) window.requestIdleCallback(start, { timeout: 4000 });
+    else setTimeout(start, 1500);
     if (!('serviceWorker' in navigator)) return;
     const onMessage = (e: MessageEvent) => {
       const d = e.data as { type?: string; notification?: PushMessage; url?: string } | null;
@@ -141,6 +166,7 @@ export default function NotificationsProvider({ children }: { children: ReactNod
   }, []);
   const markAllRead = useCallback(() => {
     setItems(list => list.map(n => ({ ...n, read: true })));
+    setCount(0);
     getBrowserSupabase().from('notifications').update({ read_at: new Date().toISOString() }).is('read_at', null).then(() => undefined);
   }, []);
   const remove = useCallback((id: string) => {
@@ -152,7 +178,8 @@ export default function NotificationsProvider({ children }: { children: ReactNod
     return () => { listeners.current.delete(fn); };
   }, []);
 
-  const unread = useMemo(() => items.filter(n => !n.read).length, [items]);
-  const value: Notifications = { available, loaded, ready, items, unread, markRead, markAllRead, remove, onPush };
+  const listUnread = useMemo(() => items.filter(n => !n.read).length, [items]);
+  const unread = listOn ? listUnread : count;
+  const value: Notifications = { available, loaded, ready, items, unread, showList, markRead, markAllRead, remove, onPush };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

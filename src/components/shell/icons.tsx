@@ -6,10 +6,10 @@
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Add01Icon, Alert02Icon, ArrowDown01Icon, ArrowDown02Icon, ArrowLeft01Icon, ArrowRight01Icon, ArrowUp01Icon,
-  ArrowUp02Icon, BubbleChatIcon, Calendar03Icon, CalendarCheckIn01Icon, Cancel01Icon, CheckmarkCircle02Icon,
-  CircleIcon, Clock01Icon, ComputerIcon, Delete02Icon, Flag02Icon, Folder01Icon, FolderAddIcon, ImageUpload01Icon, KanbanIcon,
+  ArrowUp02Icon, ArrowUpDownIcon, BubbleChatIcon, Calendar03Icon, CalendarCheckIn01Icon, Cancel01Icon, CheckmarkCircle02Icon,
+  CircleIcon, Clock01Icon, DashboardSquare02Icon, ComputerIcon, Delete02Icon, DragDropVerticalIcon, FilterHorizontalIcon, Flag02Icon, Folder01Icon, FolderAddIcon, ImageUpload01Icon, KanbanIcon,
   LeftToRightListBulletIcon, Login03Icon, Logout03Icon, Mail01Icon, Menu01Icon, MinusSignIcon, Moon02Icon, Notification01Icon, PencilEdit01Icon,
-  Progress02Icon, SentIcon, Settings01Icon, SheetIcon, Sun03Icon, TaskAdd01Icon, TaskDone01Icon, TextAlignLeftIcon, Tick02Icon, Upload01Icon,
+  Progress02Icon, Search01Icon, SentIcon, Settings01Icon, SheetIcon, Sun03Icon, TaskAdd01Icon, TaskDone01Icon, TextAlignLeftIcon, Tick02Icon, Upload01Icon, UserAdd01Icon, WorkHistoryIcon,
 } from '@hugeicons/core-free-icons';
 
 type Glyph = Parameters<typeof HugeiconsIcon>[0]['icon'];
@@ -24,6 +24,7 @@ const make = (icon: Glyph) => {
 };
 
 // Pages and shell
+export const IconDashboard = make(DashboardSquare02Icon);
 export const IconBoard = make(KanbanIcon);
 export const IconList = make(LeftToRightListBulletIcon);
 export const IconCalendar = make(Calendar03Icon);
@@ -35,6 +36,7 @@ export const IconMoon = make(Moon02Icon);
 export const IconLogout = make(Logout03Icon);
 export const IconSettings = make(Settings01Icon);
 export const IconBell = make(Notification01Icon);
+export const IconHistory = make(WorkHistoryIcon);
 export const IconComputer = make(ComputerIcon);
 export const IconPlus = make(Add01Icon);
 export const IconChevronUp = make(ArrowUp01Icon);
@@ -44,6 +46,7 @@ export const IconMenu = make(Menu01Icon);
 export const IconTodo = make(CircleIcon);
 export const IconDoing = make(Progress02Icon);
 export const IconDone = make(CheckmarkCircle02Icon);
+export const IconGrip = make(DragDropVerticalIcon);
 export const IconAlert = make(Alert02Icon);
 
 // Task cards
@@ -54,6 +57,7 @@ export const IconEdit = make(PencilEdit01Icon);
 export const IconTrash = make(Delete02Icon);
 export const IconDescription = make(TextAlignLeftIcon);
 export const IconSend = make(SentIcon);
+export const IconAssignee = make(UserAdd01Icon);
 
 // Buttons and navigation
 export const IconPrev = make(ArrowLeft01Icon);
@@ -73,3 +77,6 @@ export const IconLogin = make(Login03Icon);
 export const IconTaskAdd = make(TaskAdd01Icon);
 /** iPhone "Share" button, for the Add to Home Screen hint */
 export const IconShare = make(Upload01Icon);
+export const IconSearch = make(Search01Icon);
+export const IconFilter = make(FilterHorizontalIcon);
+export const IconSort = make(ArrowUpDownIcon);

@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { useNotifications } from '@/components/notifications/NotificationsProvider';
-import { requestAddOnDay } from '@/components/tasks/AddTaskForm';
+import { requestAddOnDay } from '@/components/tasks/addTaskEvents';
 import { IconLogout, IconPlus } from './icons';
 import { PAGES, PHONE_PAGES, pageFor } from './pages';
 
-const shortLabel = (label: string) => (label === 'Content calendar' ? 'Content' : label);
+const shortLabel = (label: string) => (label === 'Content calendar' ? 'Content' : label === 'Dashboard' ? 'Home' : label);
 
 type Blob = { x: number; y: number; w: number; h: number; dx: number; dy: number; n: number };
 /** Finger drag of the blob along the phone bar: where it is, and which item it is over. */
@@ -122,7 +122,6 @@ export default function Sidebar() {
 
   return (
     <nav className="rail" aria-label="Pages">
-      <Link className="rail-logo" href="/" aria-label="Taske home"><span aria-hidden="true" /></Link>
       <div className={'rail-items' + (drag ? ' is-dragging' : '')} ref={items}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onClickCapture={onClickCapture}>
         <span className={'rail-blob' + (blob ? ' is-ready' : '') + (blob && blob.n ? ' is-animated' : '') + (blobOff ? ' is-off' : '') + (drag ? ' is-dragging' : '')} style={blobStyle} aria-hidden="true">

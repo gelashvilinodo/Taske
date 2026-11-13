@@ -1,4 +1,4 @@
-import type { Comment, ProjectFields, ProjectPatch, TaskFields, TaskPatch } from '@/lib/tasks/model';
+import type { Comment, HistoryEvent, ProjectFields, ProjectPatch, TaskFields, TaskPatch } from '@/lib/tasks/model';
 
 /** Raw records as the backend returns them; normalised later by cleanTask. */
 export type RawTask = { id: string } & Record<string, unknown>;
@@ -28,4 +28,9 @@ export interface TaskStore {
   updateProject(id: string, patch: ProjectPatch): Promise<void>;
   /** Deletes the project and clears it from every task that used it. */
   deleteProject(id: string): Promise<void>;
+  /** Task history, newest first; only one task's when `taskId` is given. Throws `missing_table` when the history migration was not run. */
+  loadHistory(taskId?: string): Promise<HistoryEvent[]>;
+  insertHistory(e: HistoryEvent): Promise<void>;
+  /** Like `watch`, for history only (kept apart so a missing history table can't break live updates for tasks). */
+  watchHistory(onChange: () => void): () => void;
 }

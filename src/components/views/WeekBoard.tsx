@@ -1,14 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { addDays, DAYS, DAYS_S, iso, mondayOf, MONTHS_S, rangeLabel, shortDate, today, weekDays, weekEnd, weekday } from '@/lib/dates';
-import { byDayOrder, dayGroupOf, positionBetween } from '@/lib/tasks/model';
+import { byDayOrder } from '@/lib/tasks/model';
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { useVisibleTasks } from '@/components/tasks/Filters';
-import { requestAddOnDay } from '@/components/tasks/AddTaskForm';
+import { requestAddOnDay } from '@/components/tasks/addTaskEvents';
 import DropColumn from '@/components/tasks/DropColumn';
-import { DRAG_EDGE_EVENT, useTaskDrag } from '@/components/tasks/TaskDrag';
+import { DRAG_EDGE_EVENT, useDragSelect } from '@/components/tasks/TaskDrag';
 import { IconPlus } from '@/components/shell/icons';
+import { useDayDrop } from './useDayDrop';
+import PhoneWeek from './PhoneWeek';
 
 /**
  * Board page: Monday–Sunday columns. Drop a card on a column to move it to that day.
@@ -17,8 +19,10 @@ import { IconPlus } from '@/components/shell/icons';
  * keep sliding instead of the whole week being swapped. On drop the strip folds back to one week.
  */
 export default function WeekBoard() {
-  const { weekStart, setWeekStart, loaded, readOnly, patchTask, tasks: allTasks } = useWorkspace();
-  const { drag } = useTaskDrag();
+  const { weekStart, setWeekStart, loaded, readOnly } = useWorkspace();
+  // The board only needs to know whether a card is being dragged; the drop line and the highlighted day
+  // are drawn by the columns and day panels themselves, so the board doesn't re-render as the card moves.
+  const dragging = useDragSelect(d => !!d);
   const all = useVisibleTasks();
   const td = iso(today());
   const board = useRef<HTMLElement>(null);
@@ -85,7 +89,7 @@ export default function WeekBoard() {
     const seen = lastDays.current?.[shownRef.current];
     const weeks = seen ? Math.round((weekStart.getTime() - mondayOf(seen).getTime()) / (7 * 864e5)) : 0;
     const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (el && seen && weeks && Math.abs(weeks) <= 3 && !drag && !still) {
+    if (el && seen && weeks && Math.abs(weeks) <= 3 && !dragging && !still) {
       navSliding.current = true;
       // Snapping off while sliding: otherwise the browser re-snaps to the new week's Monday the
       // moment the strip forms, and the slide is skipped.
@@ -142,26 +146,7 @@ export default function WeekBoard() {
   }, [stripKey, goTo]);
 
   // Drop a card into a day at a given place in its list (or move it within the same day).
-  const droppedOn = useRef<string | null>(null); // day of the last drop, so the board settles on its week
-  const dropOnDay = (id: string, ds: string, index: number) => {
-    droppedOn.current = ds;
-    const moving = allTasks.find(t => t.id === id);
-    if (!moving) return;
-    const list = all.filter(t => t.day === ds && t.id !== id).sort(byDayOrder);
-    if (moving.day === ds) {
-      const before = all.filter(t => t.day === ds).sort(byDayOrder);
-      if (before.indexOf(moving) === index) return; // dropped where it was
-    }
-    // Days are grouped (open before done/canceled, then by priority), so a card can only be reordered among
-    // cards in its own group. A drop outside its group lands at the nearest end of that group.
-    const r = dayGroupOf(moving);
-    const start = list.filter(t => dayGroupOf(t) < r).length;
-    const end = start + list.filter(t => dayGroupOf(t) === r).length;
-    const at = Math.min(Math.max(index, start), end);
-    const prev = at > start ? list[at - 1] : undefined;
-    const next = at < end ? list[at] : undefined;
-    patchTask(id, { day: ds, position: prev || next ? positionBetween(prev, next) : moving.position });
-  };
+  const { fitOnDay, dropOnDay, droppedOn } = useDayDrop(all);
 
   // Holding a dragged card at a screen edge slides the days one at a time. At the end of the strip
   // the next (or previous) week joins it first.
@@ -169,7 +154,8 @@ export default function WeekBoard() {
     const onEdge = (e: Event) => {
       const dir = (e as CustomEvent<number>).detail as -1 | 1;
       const el = board.current;
-      if (!el) return;
+      // On a phone the day view (PhoneWeek) handles the edges; this strip is hidden there.
+      if (!el || !el.offsetWidth) return;
       const list = daysRef.current;
       const cur = shownRef.current;
       const to = cur + dir;
@@ -210,7 +196,6 @@ export default function WeekBoard() {
 
   // After the drop, fold the strip back to one week: the week the card landed in (or, when the drag
   // was cancelled, the current one), keeping the same days in view.
-  const dragging = !!drag;
   useEffect(() => {
     if (dragging) return;
     const dropped = droppedOn.current;
@@ -252,6 +237,7 @@ export default function WeekBoard() {
 
   return (
     <>
+    <PhoneWeek />
     <nav className="week-dots" aria-label="Days">
       {weekDays(weekStart).map((d, i) => {
         const ds = iso(d);
@@ -276,10 +262,9 @@ export default function WeekBoard() {
         const wd = weekday(d);
         const breakHere = wd === 0 && i > 0;
         return (
-          <div key={'p' + ds} style={{ gridColumn: i + 1, gridRow: '1 / 3' }} aria-hidden="true"
-            data-drop={readOnly ? undefined : 'day:' + ds}
-            data-week={breakHere ? rangeLabel(d, weekEnd(d), MONTHS_S) : undefined}
-            className={'column' + (ds === td ? ' is-today' : '') + (wd >= 5 ? ' is-weekend' : '') + (breakHere ? ' week-break' : '') + (drag?.zone === 'day:' + ds ? ' is-over' : '')} />
+          <DayPanel key={'p' + ds} zone={'day:' + ds} style={{ gridColumn: i + 1, gridRow: '1 / 3' }}
+            drop={!readOnly} week={breakHere ? rangeLabel(d, weekEnd(d), MONTHS_S) : undefined}
+            className={'column' + (ds === td ? ' is-today' : '') + (wd >= 5 ? ' is-weekend' : '') + (breakHere ? ' week-break' : '')} />
         );
       })}
       {days.map((d, i) => {
@@ -308,6 +293,7 @@ export default function WeekBoard() {
             <DropColumn key={ds} zone={'day:' + ds} tasks={tasks} style={{ gridColumn: i + 1 }}
               className="day-tasks" label={DAYS[wd] + ', ' + shortDate(d)}
               onDropTask={(id, index) => dropOnDay(id, ds, index)}
+              fitIndex={(id, index) => fitOnDay(id, ds, index)}
               header={null}
               empty={loaded && <p className="empty">No tasks</p>}
             />
@@ -317,4 +303,10 @@ export default function WeekBoard() {
     </main>
     </>
   );
+}
+
+/** A day's background panel; lights up on its own while a card is over that day. */
+function DayPanel({ zone, drop, week, className, style }: { zone: string; drop: boolean; week?: string; className: string; style: CSSProperties }) {
+  const over = useDragSelect(d => d?.zone === zone);
+  return <div style={style} aria-hidden="true" data-drop={drop ? zone : undefined} data-week={week} className={className + (over ? ' is-over' : '')} />;
 }

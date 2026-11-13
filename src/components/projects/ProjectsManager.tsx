@@ -6,12 +6,15 @@ import { useWorkspace } from '@/components/workspace/WorkspaceProvider';
 import { IconPlus } from '@/components/shell/icons';
 import { ProjectLogo, projectStyle } from './ProjectBadge';
 import ProjectDialog from './ProjectDialog';
+import ProjectPreview from './ProjectPreview';
 
-/** Projects page: a tile per project plus a tile to add one. Click a tile to edit it. */
+/** Projects page: a tile per project plus a tile to add one. Click a tile to preview it; edit from there. */
 export default function ProjectsManager() {
   const { projects, projectsReady, tasks, loaded, readOnly } = useWorkspace();
   // null = creating, Project = editing, undefined = dialog closed
   const [editing, setEditing] = useState<Project | null | undefined>(undefined);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const previewing = projects.find(p => p.id === previewId);
 
   if (!projectsReady) {
     return (
@@ -29,7 +32,7 @@ export default function ProjectsManager() {
           const open = mine.filter(t => !closed(t)).length;
           const pct = mine.length ? Math.round((mine.length - open) / mine.length * 100) : 0;
           return (
-            <button key={p.id} type="button" className="pj-tile" style={projectStyle(p)} disabled={readOnly} onClick={() => setEditing(p)}>
+            <button key={p.id} type="button" className="pj-tile" style={projectStyle(p)} onClick={() => setPreviewId(p.id)}>
               <ProjectLogo project={p} size="lg" />
               <span className="pj-name">{p.name}</span>
               <span className="pj-count">{mine.length ? `${open} open · ${mine.length} total` : 'No tasks yet'}</span>
@@ -48,6 +51,7 @@ export default function ProjectsManager() {
       {loaded && !projects.length && (
         <p className="notice">You have no projects yet. Create one, then pick it when you add a task.</p>
       )}
+      <ProjectPreview project={previewing} onClose={() => setPreviewId(null)} onEdit={setEditing} />
       <ProjectDialog project={editing} onClose={() => setEditing(undefined)} />
     </>
   );

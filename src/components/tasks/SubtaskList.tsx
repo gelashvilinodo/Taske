@@ -1,7 +1,8 @@
 'use client';
 
-import { PRIORITIES, prioName, sortSubs, STATUSES, statusName, subClosed, toggledSub, type PriorityId, type StatusId, type Subtask } from '@/lib/tasks/model';
-import { IconFlag } from '@/components/shell/icons';
+import { PRIORITIES, prioName, sortSubs, STATUSES, statusName, subClosed, subProgress, toggledSub, type PriorityId, type StatusId, type Subtask } from '@/lib/tasks/model';
+import { IconComment, IconFlag } from '@/components/shell/icons';
+import AssigneeButton from '@/components/ui/AssigneeButton';
 import MenuButton from './MenuButton';
 import { SubMark } from './StatusIcon';
 
@@ -36,13 +37,17 @@ export function SubStatusMenu({ status, onPick }: { status: StatusId; onPick: (i
 
 const PRIO_ITEMS = [...PRIORITIES, { id: '', name: 'No priority' }] as const;
 
-/** Small flag pill that picks a subtask's priority. With no priority it is a faint flag only. */
-export function SubPrioMenu({ priority, onPick }: { priority: PriorityId; onPick: (id: PriorityId) => void }) {
+/**
+ * Small flag pill that picks a subtask's priority. With no priority it is a faint flag only.
+ * `flagOnly` never shows the word: the menu lists each priority with its word and flag, the pill keeps just the coloured flag.
+ */
+export function SubPrioMenu({ priority, onPick, flagOnly = false }: { priority: PriorityId; onPick: (id: PriorityId) => void; flagOnly?: boolean }) {
   return (
-    <MenuButton className={'prio sub-prio ' + (priority ? 'pr-' + priority : 'none')} title="Change subtask priority"
+    <MenuButton className={'prio sub-prio ' + (priority ? 'pr-' + priority : 'none') + (flagOnly ? ' sub-prio-flag' : '')}
+      title={(priority ? prioName(priority) + ' priority' : 'No priority') + '. Click to change'}
       ariaLabel={'Subtask priority: ' + (priority ? prioName(priority) : 'none') + '. Click to change'}
       items={PRIO_ITEMS} current={priority} onPick={id => onPick(id as PriorityId)}>
-      <IconFlag size={12} />{priority && <span>{prioName(priority)}</span>}
+      <IconFlag size={flagOnly ? 13 : 12} />{priority && !flagOnly && <span>{prioName(priority)}</span>}
     </MenuButton>
   );
 }
@@ -104,3 +109,42 @@ export default function SubtaskList({ subs, onChange, menus = false, pick = fals
     </ul>
   );
 }
+
+/**
+ * Subtasks at every depth, as a tree: a subtask's own subtasks sit indented under it.
+ * Each row: round checkbox (status), the title (a button that opens the subtask's window), an assignee
+ * button and a priority flag that opens the priorities. The full status menu lives in the subtask's window.
+ * `onStatus` and `onPriority` are left out when the list can't be changed.
+ */
+export function SubTree({ subs, onStatus, onPriority, onOpen, comments }: {
+  subs: Subtask[];
+  onStatus?: (id: string, status: StatusId) => void;
+  onPriority?: (id: string, priority: PriorityId) => void;
+  onOpen: (id: string) => void;
+  /** Number of comments on a subtask, shown as a small bubble beside its title. */
+  comments?: (id: string) => number;
+}) {
+  return (
+    <ul className="sub-list sub-tree">
+      {sortSubs(subs).map(s => (
+        <li key={s.id} className="sub-node">
+          <div className={'sub-item s-' + s.status + (subClosed(s) ? ' is-done' : '')}>
+            <SubCheck status={s.status} onToggle={onStatus ? () => onStatus(s.id, toggledSub(s).status) : undefined} />
+            <button type="button" className="sub-title sub-open" title="Open subtask" onClick={() => onOpen(s.id)}>
+              {s.title}
+              {s.subtasks.length > 0 && <em className="sub-kids" aria-label={s.subtasks.length + ' subtasks'}>{subProgressLabel(s.subtasks)}</em>}
+              {!!comments?.(s.id) && <em className="sub-kids sub-cmts" aria-label={comments(s.id) + ' comments'}><IconComment size={11} />{comments(s.id)}</em>}
+            </button>
+            {onPriority ? <>
+              <AssigneeButton compact />
+              <SubPrioMenu priority={s.priority} onPick={priority => onPriority(s.id, priority)} flagOnly />
+            </> : <SubPrioFlag priority={s.priority} />}
+          </div>
+          {s.subtasks.length > 0 && <SubTree subs={s.subtasks} onStatus={onStatus} onPriority={onPriority} onOpen={onOpen} comments={comments} />}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const subProgressLabel = (subs: Subtask[]) => { const p = subProgress(subs); return p.done + '/' + p.total; };
